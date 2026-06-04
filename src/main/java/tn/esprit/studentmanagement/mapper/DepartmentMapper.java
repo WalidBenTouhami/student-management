@@ -7,22 +7,22 @@ public class DepartmentMapper {
     public static DepartmentDTO toDto(Department d) {
         if (d == null) return null;
         DepartmentDTO dto = new DepartmentDTO();
-        dto.idDepartment = d.getIdDepartment();
-        dto.name = d.getName();
-        dto.location = d.getLocation();
-        dto.phone = d.getPhone();
-        dto.head = d.getHead();
+        dto.setIdDepartment(d.getIdDepartment());
+        dto.setName(d.getName());
+        dto.setLocation(d.getLocation());
+        dto.setPhone(d.getPhone());
+        dto.setHead(d.getHead());
         return dto;
     }
 
     public static Department toEntity(DepartmentDTO dto) {
         if (dto == null) return null;
         Department d = new Department();
-        d.setIdDepartment(dto.idDepartment);
-        d.setName(dto.name);
-        d.setLocation(dto.location);
-        d.setPhone(dto.phone);
-        d.setHead(dto.head);
+        d.setIdDepartment(dto.getIdDepartment());
+        d.setName(dto.getName());
+        d.setLocation(dto.getLocation());
+        d.setPhone(dto.getPhone());
+        d.setHead(dto.getHead());
         return d;
     }
 }

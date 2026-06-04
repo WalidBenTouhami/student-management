@@ -23,38 +23,38 @@ public class StudentController {
     IStudentService studentService;
     IDepartmentService departmentService;
 
-    @GetMapping("/getAllStudents")
+    @GetMapping
     public org.springframework.data.domain.Page<StudentDTO> getAllStudents(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
         var studentsPage = studentService.getAllStudentsPaginated(page, size);
         var dtoList = studentsPage.getContent().stream().map(StudentMapper::toDto).collect(Collectors.toList());
         return new org.springframework.data.domain.PageImpl<>(dtoList, studentsPage.getPageable(), studentsPage.getTotalElements());
     }
 
-    @GetMapping("/getStudent/{id}")
+    @GetMapping("/{id}")
     public StudentDTO getStudent(@PathVariable Long id) { return StudentMapper.toDto(studentService.getStudentById(id)); }
 
-    @PostMapping("/createStudent")
+    @PostMapping
     public StudentDTO createStudent(@Valid @RequestBody StudentDTO studentDto) {
         Student s = StudentMapper.toEntity(studentDto);
-        if (studentDto.departmentId != null) {
-            Department dep = departmentService.getDepartmentById(studentDto.departmentId);
+        if (studentDto.getDepartmentId() != null) {
+            Department dep = departmentService.getDepartmentById(studentDto.getDepartmentId());
             s.setDepartment(dep);
         }
         Student saved = studentService.saveStudent(s);
         return StudentMapper.toDto(saved);
     }
 
-    @PutMapping("/updateStudent")
+    @PutMapping
     public StudentDTO updateStudent(@Valid @RequestBody StudentDTO studentDto) {
         Student s = StudentMapper.toEntity(studentDto);
-        if (studentDto.departmentId != null) {
-            Department dep = departmentService.getDepartmentById(studentDto.departmentId);
+        if (studentDto.getDepartmentId() != null) {
+            Department dep = departmentService.getDepartmentById(studentDto.getDepartmentId());
             s.setDepartment(dep);
         }
         Student saved = studentService.saveStudent(s);
         return StudentMapper.toDto(saved);
     }
 
-    @DeleteMapping("/deleteStudent/{id}")
+    @DeleteMapping("/{id}")
     public void deleteStudent(@PathVariable Long id) { studentService.deleteStudent(id); }
 }

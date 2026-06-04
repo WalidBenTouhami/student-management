@@ -1,12 +1,17 @@
 package tn.esprit.studentmanagement.dto;
 
+import lombok.Data;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 
+@Data
 public class EnrollmentDTO {
-    public Long idEnrollment;
-    public LocalDate enrollmentDate;
-    public Double grade;
-    public String status;
-    public Long studentId;
-    public Long courseId;
+    private Long idEnrollment;
+    @NotNull
+    private LocalDate enrollmentDate;
+    private Double grade;
+    @NotNull
+    private String status;
+    private Long studentId;
+    private Long courseId;
 }

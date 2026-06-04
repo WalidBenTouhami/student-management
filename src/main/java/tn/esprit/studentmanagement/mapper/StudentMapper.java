@@ -7,27 +7,27 @@ public class StudentMapper {
     public static StudentDTO toDto(Student s) {
         if (s == null) return null;
         StudentDTO d = new StudentDTO();
-        d.idStudent = s.getIdStudent();
-        d.firstName = s.getFirstName();
-        d.lastName = s.getLastName();
-        d.email = s.getEmail();
-        d.phone = s.getPhone();
-        d.dateOfBirth = s.getDateOfBirth();
-        d.address = s.getAddress();
-        if (s.getDepartment() != null) d.departmentId = s.getDepartment().getIdDepartment();
+        d.setIdStudent(s.getIdStudent());
+        d.setFirstName(s.getFirstName());
+        d.setLastName(s.getLastName());
+        d.setEmail(s.getEmail());
+        d.setPhone(s.getPhone());
+        d.setDateOfBirth(s.getDateOfBirth());
+        d.setAddress(s.getAddress());
+        if (s.getDepartment() != null) d.setDepartmentId(s.getDepartment().getIdDepartment());
         return d;
     }
 
     public static Student toEntity(StudentDTO d) {
         if (d == null) return null;
         Student s = new Student();
-        s.setIdStudent(d.idStudent);
-        s.setFirstName(d.firstName);
-        s.setLastName(d.lastName);
-        s.setEmail(d.email);
-        s.setPhone(d.phone);
-        s.setDateOfBirth(d.dateOfBirth);
-        s.setAddress(d.address);
+        s.setIdStudent(d.getIdStudent());
+        s.setFirstName(d.getFirstName());
+        s.setLastName(d.getLastName());
+        s.setEmail(d.getEmail());
+        s.setPhone(d.getPhone());
+        s.setDateOfBirth(d.getDateOfBirth());
+        s.setAddress(d.getAddress());
         // department association handled by service/controller
         return s;
     }

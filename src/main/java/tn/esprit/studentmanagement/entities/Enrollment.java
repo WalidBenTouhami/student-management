@@ -23,9 +23,11 @@ public class Enrollment {
     private Status status;
 
     @ManyToOne
+    @ToString.Exclude
     private Student student;
 
     @ManyToOne
+    @ToString.Exclude
     private Course course;
 
 

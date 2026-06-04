@@ -4,11 +4,12 @@ import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 
 @Data
-public class DepartmentDTO {
-    private Long idDepartment;
+public class CourseDTO {
+    private Long idCourse;
     @NotBlank
     private String name;
-    private String location;
-    private String phone;
-    private String head;
+    @NotBlank
+    private String code;
+    private int credit;
+    private String description;
 }

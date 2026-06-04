@@ -32,8 +32,10 @@ public class Student {
     private String address;
 
     @ManyToOne
+    @ToString.Exclude
     private Department department;
 
     @OneToMany(mappedBy = "student")
+    @ToString.Exclude
     private List<Enrollment> enrollments;
 }
