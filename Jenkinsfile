@@ -64,7 +64,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Server') {
+        stage('Clean environment and Deploy to server') {
             steps {
                 sh '''
                     docker network create app-network 2>/dev/null || true
