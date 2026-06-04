@@ -26,13 +26,16 @@ pipeline {
 
         stage('Build Maven Project') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh './mvnw -DskipTests package'
+                script {
+                    env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                sh "docker build --pull --no-cache -t ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG} ."
             }
         }
 
@@ -46,6 +49,10 @@ pipeline {
                     sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin docker.io
                         docker push ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
+                        if [ -n "${GIT_COMMIT}" ]; then
+                            docker tag ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${GIT_COMMIT}
+                            docker push ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${GIT_COMMIT}
+                        fi
                         docker logout docker.io
                     '''
                 }
@@ -70,11 +77,15 @@ pipeline {
                     
                     docker run -d --name ${DOCKER_IMAGE} \
                         --network app-network \
-                        -p 8081:8080 \
+                        -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE} \
+                        -e SPRING_DATASOURCE_USERNAME=root \
+                        -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
+                        -e SERVER_PORT=8089 \
+                        -p 8089:8089 \
                         --restart unless-stopped \
                         ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
                     
-                    echo "✅ Student Management déployé sur http://localhost:8081"
+                    echo "✅ Student Management déployé sur http://localhost:8089"
                 '''
             }
         }
