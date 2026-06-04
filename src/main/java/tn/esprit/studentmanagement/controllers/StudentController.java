@@ -24,7 +24,11 @@ public class StudentController {
     IDepartmentService departmentService;
 
     @GetMapping("/getAllStudents")
-    public List<StudentDTO> getAllStudents() { return studentService.getAllStudents().stream().map(StudentMapper::toDto).collect(Collectors.toList()); }
+    public org.springframework.data.domain.Page<StudentDTO> getAllStudents(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        var studentsPage = studentService.getAllStudentsPaginated(page, size);
+        var dtoList = studentsPage.getContent().stream().map(StudentMapper::toDto).collect(Collectors.toList());
+        return new org.springframework.data.domain.PageImpl<>(dtoList, studentsPage.getPageable(), studentsPage.getTotalElements());
+    }
 
     @GetMapping("/getStudent/{id}")
     public StudentDTO getStudent(@PathVariable Long id) { return StudentMapper.toDto(studentService.getStudentById(id)); }

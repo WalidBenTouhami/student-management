@@ -17,7 +17,11 @@ import java.util.stream.Collectors;
 public class EnrollmentController {
     IEnrollment enrollmentService;
     @GetMapping("/getAllEnrollment")
-    public List<EnrollmentDTO> getAllEnrollment() { return enrollmentService.getAllEnrollments().stream().map(EnrollmentMapper::toDto).collect(Collectors.toList()); }
+    public org.springframework.data.domain.Page<EnrollmentDTO> getAllEnrollment(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        var pageData = enrollmentService.getAllEnrollmentsPaginated(page, size);
+        var dtoList = pageData.getContent().stream().map(EnrollmentMapper::toDto).collect(Collectors.toList());
+        return new org.springframework.data.domain.PageImpl<>(dtoList, pageData.getPageable(), pageData.getTotalElements());
+    }
 
     @GetMapping("/getEnrollment/{id}")
     public EnrollmentDTO getEnrollment(@PathVariable Long id) { return EnrollmentMapper.toDto(enrollmentService.getEnrollmentById(id)); }

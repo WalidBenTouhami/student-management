@@ -19,7 +19,11 @@ public class DepartmentController {
     private IDepartmentService departmentService;
 
     @GetMapping("/getAllDepartment")
-    public List<DepartmentDTO> getAllDepartment() { return departmentService.getAllDepartments().stream().map(DepartmentMapper::toDto).toList(); }
+    public org.springframework.data.domain.Page<DepartmentDTO> getAllDepartment(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+        var pageData = departmentService.getAllDepartmentsPaginated(page, size);
+        var dtoList = pageData.getContent().stream().map(DepartmentMapper::toDto).toList();
+        return new org.springframework.data.domain.PageImpl<>(dtoList, pageData.getPageable(), pageData.getTotalElements());
+    }
 
     @GetMapping("/getDepartment/{id}")
     public DepartmentDTO getDepartment(@PathVariable Long id) { return DepartmentMapper.toDto(departmentService.getDepartmentById(id)); }

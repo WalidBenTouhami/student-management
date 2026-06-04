@@ -6,6 +6,8 @@ import tn.esprit.studentmanagement.entities.Department;
 import tn.esprit.studentmanagement.repositories.DepartmentRepository;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @Service
 
@@ -16,6 +18,11 @@ public class DepartmentService implements IDepartmentService {
     @Override
     public List<Department> getAllDepartments() {
         return departmentRepository.findAll();
+    }
+
+    @Override
+    public Page<Department> getAllDepartmentsPaginated(int page, int size) {
+        return departmentRepository.findAll(PageRequest.of(page, size));
     }
 
     @Override
