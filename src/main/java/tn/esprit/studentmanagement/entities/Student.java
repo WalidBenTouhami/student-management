@@ -17,9 +17,16 @@ public class Student {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idStudent;
+    @jakarta.validation.constraints.NotBlank
     private String firstName;
+
+    @jakarta.validation.constraints.NotBlank
     private String lastName;
+
+    @jakarta.validation.constraints.Email
+    @jakarta.validation.constraints.NotBlank
     private String email;
+
     private String phone;
     private LocalDate dateOfBirth;
     private String address;

@@ -20,7 +20,8 @@ public class DepartmentService implements IDepartmentService {
 
     @Override
     public Department getDepartmentById(Long idDepartment) {
-        return departmentRepository.findById(idDepartment).get();
+        return departmentRepository.findById(idDepartment)
+                .orElseThrow(() -> new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Department not found: " + idDepartment));
     }
 
     @Override

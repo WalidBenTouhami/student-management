@@ -15,9 +15,11 @@ public class Enrollment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idEnrollment;
+    @jakarta.validation.constraints.NotNull
     private LocalDate enrollmentDate;
     private Double grade;
     @Enumerated(EnumType.STRING)
+    @jakarta.validation.constraints.NotNull
     private Status status;
 
     @ManyToOne

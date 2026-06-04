@@ -19,7 +19,8 @@ public class EnrollmentService implements IEnrollment {
 
     @Override
     public Enrollment getEnrollmentById(Long idEnrollment) {
-        return enrollmentRepository.findById(idEnrollment).get();
+        return enrollmentRepository.findById(idEnrollment)
+                .orElseThrow(() -> new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Enrollment not found: " + idEnrollment));
     }
 
     @Override
