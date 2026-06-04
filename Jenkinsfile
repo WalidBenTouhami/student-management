@@ -26,6 +26,7 @@ pipeline {
 
         stage('Build Maven Project') {
             steps {
+                sh 'chmod +x mvnw'
                 sh './mvnw -DskipTests package'
                 script {
                     env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
