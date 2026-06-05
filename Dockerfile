@@ -1,6 +1,6 @@
 ### Multi-stage Dockerfile
 # 1) Build stage: use Maven image to compile the fat jar
-FROM maven:3.9.4-eclipse-temurin-17 AS builder
+FROM maven:3.9.4-eclipse-temurin-25 AS builder
 WORKDIR /workspace
 
 # Copy sources and build
@@ -14,7 +14,7 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # 2) Runtime stage: use Distroless Java for minimal attack surface
-FROM gcr.io/distroless/java17-debian11:nonroot
+FROM gcr.io/distroless/java25-debian11:nonroot
 
 WORKDIR /app
 
