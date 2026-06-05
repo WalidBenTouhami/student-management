@@ -93,6 +93,8 @@ curl_with_auth() {
         -X "$method"
         --connect-timeout "$REQUEST_TIMEOUT"
         --max-time "$REQUEST_TIMEOUT"
+        -c "/tmp/jenkins_cookie.txt"
+        -b "/tmp/jenkins_cookie.txt"
     )
 
     # Ajouter authentification si token ou password fourni
@@ -163,28 +165,28 @@ get_status_icon() {
 get_job_color() {
     local job="$1"
     local encoded_job=$(printf '%s' "$job" | sed 's/\//%2F/g')
-    local response=$(curl_with_auth "${JENKINS_URL}/job/${encoded_job}/api/json")
+    local response=$(curl_with_auth "${JENKINS_URL}/job/${encoded_job}/api/json?tree=color")
     echo "$response" | grep -o '"color":"[^"]*"' | cut -d'"' -f4 | head -1 | sed 's/notfound/grey/'
 }
 
 get_last_build_number() {
     local job="$1"
     local encoded_job=$(printf '%s' "$job" | sed 's/\//%2F/g')
-    local response=$(curl_with_auth "${JENKINS_URL}/job/${encoded_job}/api/json")
+    local response=$(curl_with_auth "${JENKINS_URL}/job/${encoded_job}/api/json?tree=lastBuild[number]")
     echo "$response" | grep -o '"number":[0-9]*' | head -1 | cut -d':' -f2 | sed 's/^$/0/'
 }
 
 get_last_build_result() {
     local job="$1"
     local encoded_job=$(printf '%s' "$job" | sed 's/\//%2F/g')
-    local response=$(curl_with_auth "${JENKINS_URL}/job/${encoded_job}/lastBuild/api/json" 2>/dev/null)
+    local response=$(curl_with_auth "${JENKINS_URL}/job/${encoded_job}/lastBuild/api/json?tree=result" 2>/dev/null)
     echo "$response" | grep -o '"result":"[^"]*"' | cut -d'"' -f4 | sed 's|^$|N/A|'
 }
 
 check_jenkins() {
     log_info "Vérification de la connexion à Jenkins..."
-    local response=$(curl_with_auth "${JENKINS_URL}/api/json")
-    if [[ -z "$response" ]] || echo "$response" | grep -qi "Authentication required\|HTTP 403"; then
+    local response=$(curl_with_auth "${JENKINS_URL}/api/json?tree=mode")
+    if [[ -z "$response" ]] || echo "$response" | grep -qi "Authentication required\\|HTTP 403"; then
         echo -e "${RED}❌ Jenkins n'est pas accessible sur ${JENKINS_URL}${NC}"
         echo -e "${YELLOW}💡 Astuce: Définissez les variables d'environnement:${NC}"
         echo "   export JENKINS_TOKEN='votre_token'"
@@ -196,7 +198,7 @@ check_jenkins() {
 }
 
 list_jobs() {
-    curl_with_auth "${JENKINS_URL}/api/json" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | sort
+    curl_with_auth "${JENKINS_URL}/api/json?tree=jobs[name]" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | sort
 }
 
 display_jobs() {
@@ -230,17 +232,18 @@ display_jobs() {
 
 display_json() {
     local first=true
-    echo '{ "jobs": ['
+    local json_output
+    json_output=$(
+        echo '{ "jobs": ['
+        while IFS= read -r job; do
+            [[ -z "$job" ]] && continue
+            $first || echo ','
+            first=false
+            local color=$(get_job_color "$job")
+            local build_num=$(get_last_build_number "$job")
+            local build_result=$(get_last_build_result "$job")
 
-    while IFS= read -r job; do
-        [[ -z "$job" ]] && continue
-        $first || echo ','
-        first=false
-        local color=$(get_job_color "$job")
-        local build_num=$(get_last_build_number "$job")
-        local build_result=$(get_last_build_result "$job")
-
-        cat <<EOF
+            cat <<EOF
         {
             "name": "$job",
             "status": "${color:-unknown}",
@@ -248,10 +251,17 @@ display_json() {
             "last_result": "${build_result:-N/A}"
         }
 EOF
-    done <<< "$(list_jobs)"
+        done <<< "$(list_jobs)"
+        echo '] }'
+    )
 
-    echo '] }' | jq '.' > "$REPORT_FILE" 2>/dev/null || cat > "$REPORT_FILE" <<< '{"error":"jq not installed"}'
-    echo '] }'
+    if command -v jq >/dev/null 2>&1; then
+        echo "$json_output" | jq '.' > "$REPORT_FILE"
+        echo "$json_output" | jq '.'
+    else
+        echo "$json_output" > "$REPORT_FILE"
+        echo "$json_output"
+    fi
 }
 
 watch_jobs() {
