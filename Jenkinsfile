@@ -17,6 +17,7 @@ pipeline {
         DEPLOY_SERVER = "localhost"
         MYSQL_ROOT_PASSWORD = "root123"
         MYSQL_DATABASE = "studentdb"
+        SONAR_HOST_URL = "http://localhost:9000"
     }
 
     stages {
@@ -30,10 +31,34 @@ pipeline {
 
         stage('Build Maven Project') {
             steps {
+                sh 'sed -i "s/\\r$//" mvnw'
                 sh 'chmod +x mvnw'
                 sh './mvnw -DskipTests package'
                 script {
                     env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                sh './mvnw -DskipTests sonar:sonar -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=admin -Dsonar.password=sonar'
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                script {
+                    try {
+                        timeout(time: 5, unit: 'MINUTES') {
+                            def qg = waitForQualityGate()
+                            if (qg.status != 'OK') {
+                                error "Pipeline aborted due to Quality Gate: ${qg.status}"
+                            }
+                        }
+                    } catch (err) {
+                        echo "Quality Gate step skipped or failed: ${err}"
+                    }
                 }
             }
         }
@@ -79,6 +104,9 @@ pipeline {
                         -e MYSQL_DATABASE=${MYSQL_DATABASE} \
                         --restart unless-stopped \
                         mysql:8.0
+                    
+                    echo "Attente de l'initialisation de MySQL..."
+                    sleep 15
                     
                     docker run -d --name ${DOCKER_IMAGE} \
                         --network app-network \
