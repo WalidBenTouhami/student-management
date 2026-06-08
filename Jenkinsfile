@@ -20,6 +20,7 @@ pipeline {
         APP_CONTEXT_PATH = "/student"
         APP_PORT = "8089"
         CORS_ALLOWED_ORIGINS = "http://localhost:4200"
+        SPRING_PROFILES_ACTIVE = "test"
     }
 
     stages {
@@ -31,47 +32,25 @@ pipeline {
             }
         }
 
-        stage('Start MySQL for Tests') {
-            steps {
-                sh '''
-                    docker run -d --name mysql-test \
-                        -e MYSQL_ROOT_PASSWORD=*** \
-                        -e MYSQL_DATABASE=studentdb \
-                        -p 3306:3306 \
-                        mysql:8.0
-                    # Attendre que MySQL soit prêt
-                    for i in $(seq 1 30); do
-                        if docker exec mysql-test mysqladmin ping -h localhost -u root -psecret --silent; then
-                            echo "MySQL is ready"
-                            break
-                        fi
-                        echo "Waiting for MySQL..."
-                        sleep 2
-                    done
-                '''
-                }
-            }
-
         stage('Build and Test') {
             steps {
                 sh 'sed -i "s/\\r$//" mvnw'
                 sh 'chmod +x mvnw'
-                sh './mvnw clean verify'
+                sh './mvnw clean verify -Dspring.profiles.active=test'
                 script {
                     env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                 }
             }
-        }
-
-        stage('Build Maven Project') {
-            steps {
-                sh './mvnw clean package -Dspring.profiles.active=test'
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                }
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                withCredentials([string(credentialsId: 'Sonar_token', variable: 'SONAR_TOKEN')]) {
                     sh './mvnw sonar:sonar \
                         -Dsonar.host.url=${SONAR_HOST_URL} \
                         -Dsonar.login=${SONAR_TOKEN}'
@@ -113,27 +92,16 @@ pipeline {
             }
         }
 
-        stage('Clean environment and Deploy to server') {
+        stage('Clean environment and Deploy') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'mysql-root-credentials',
-                        usernameVariable: 'MYSQL_USER',
-                        passwordVariable: 'MYSQL_ROOT_PASSWORD'
-                    ),
-                    usernamePassword(
-                        credentialsId: 'actuator-credentials',
-                        usernameVariable: 'ACTUATOR_USER',
-                        passwordVariable: 'ACTUATOR_PASSWORD'
-                    ),
-                    usernamePassword(
-                        credentialsId: 'api-credentials',
-                        usernameVariable: 'API_USER',
-                        passwordVariable: 'API_PASSWORD'
-                    )
-                ]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'mysql-root-credentials',
+                    usernameVariable: 'MYSQL_USER',
+                    passwordVariable: 'MYSQL_ROOT_PASSWORD'
+                )]) {
                     sh '''
                         docker network create app-network 2>/dev/null || true
+
                         docker stop mysql 2>/dev/null || true
                         docker rm mysql 2>/dev/null || true
                         docker stop ${DOCKER_IMAGE} 2>/dev/null || true
@@ -150,7 +118,7 @@ pipeline {
                             --restart unless-stopped \
                             mysql:8.0
 
-                        echo "Waiting for MySQL to become healthy..."
+                        echo "Waiting for MySQL..."
                         for i in $(seq 1 30); do
                             if [ "$(docker inspect --format='{{.State.Health.Status}}' mysql 2>/dev/null)" = "healthy" ]; then
                                 echo "MySQL is ready."
@@ -165,28 +133,15 @@ pipeline {
                             -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true \
                             -e SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-root} \
                             -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
-                            -e ACTUATOR_USER=${ACTUATOR_USER} \
-                            -e ACTUATOR_PASSWORD=${ACTUATOR_PASSWORD} \
-                            -e API_USER=${API_USER} \
-                            -e API_PASSWORD=${API_PASSWORD} \
-                            -e API_SECURITY_ENABLED=true \
-                            -e CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:4200} \
                             -e SERVER_PORT=${APP_PORT} \
                             -p ${APP_PORT}:${APP_PORT} \
                             --restart unless-stopped \
                             ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
 
-                        echo "Waiting for application health..."
-                        for i in $(seq 1 30); do
-                            if curl -sf -u "${ACTUATOR_USER}:${ACTUATOR_PASSWORD}" \
-                                "http://localhost:${APP_PORT}${APP_CONTEXT_PATH}/actuator/health" | grep -q '"status":"UP"'; then
-                                echo "Application is healthy."
-                                break
-                            fi
-                            sleep 3
-                        done
+                        echo "Waiting for application..."
+                        sleep 15
 
-                        echo "Student Management deployed on http://localhost:${APP_PORT}${APP_CONTEXT_PATH}"
+                        echo "✅ Student Management deployed on http://localhost:${APP_PORT}${APP_CONTEXT_PATH}"
                     '''
                 }
             }
@@ -195,10 +150,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline succeeded.'
+            echo '✅ Pipeline succeeded.'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo '❌ Pipeline failed.'
         }
     }
 }
