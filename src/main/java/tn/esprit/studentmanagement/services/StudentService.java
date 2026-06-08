@@ -1,6 +1,5 @@
 package tn.esprit.studentmanagement.services;
 
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.esprit.studentmanagement.entities.Student;
@@ -19,6 +18,11 @@ public class StudentService implements IStudentService {
     public Student getStudentById(Long id) { return studentRepository.findById(id)
             .orElseThrow(() -> new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Student not found: " + id)); }
     public Student saveStudent(Student student) { return studentRepository.save(student); }
-    public void deleteStudent(Long id) { studentRepository.deleteById(id); }
+    public void deleteStudent(Long id) {
+        if (!studentRepository.existsById(id)) {
+            throw new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Student not found: " + id);
+        }
+        studentRepository.deleteById(id);
+    }
 
 }

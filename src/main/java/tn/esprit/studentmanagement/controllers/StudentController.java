@@ -1,7 +1,6 @@
 package tn.esprit.studentmanagement.controllers;
 
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.studentmanagement.dto.StudentDTO;
 import tn.esprit.studentmanagement.entities.Student;
@@ -17,7 +16,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/students")
-@CrossOrigin(origins = "http://localhost:4200")
 @AllArgsConstructor
 public class StudentController {
     IStudentService studentService;
