@@ -31,6 +31,27 @@ pipeline {
             }
         }
 
+        stage('Start MySQL for Tests') {
+            steps {
+                sh '''
+                    docker run -d --name mysql-test \
+                        -e MYSQL_ROOT_PASSWORD=*** \
+                        -e MYSQL_DATABASE=studentdb \
+                        -p 3306:3306 \
+                        mysql:8.0
+                    # Attendre que MySQL soit prêt
+                    for i in $(seq 1 30); do
+                        if docker exec mysql-test mysqladmin ping -h localhost -u root -psecret --silent; then
+                            echo "MySQL is ready"
+                            break
+                        fi
+                        echo "Waiting for MySQL..."
+                        sleep 2
+                    done
+                '''
+                }
+            }
+
         stage('Build and Test') {
             steps {
                 sh 'sed -i "s/\\r$//" mvnw'
@@ -39,6 +60,12 @@ pipeline {
                 script {
                     env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                 }
+            }
+        }
+
+        stage('Build Maven Project') {
+            steps {
+                sh './mvnw clean package -Dspring.profiles.active=test'
             }
         }
 
