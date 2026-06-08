@@ -1,6 +1,5 @@
 package tn.esprit.studentmanagement.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.esprit.studentmanagement.entities.Student;
 import tn.esprit.studentmanagement.repositories.StudentRepository;
@@ -11,7 +10,7 @@ import org.springframework.data.domain.PageRequest;
 
 @Service
 public class StudentService implements IStudentService {
-    @Autowired
+    
     private StudentRepository studentRepository;
     public List<Student> getAllStudents() { return studentRepository.findAll(); }
     public Page<Student> getAllStudentsPaginated(int page, int size) { return studentRepository.findAll(PageRequest.of(page, size)); }
