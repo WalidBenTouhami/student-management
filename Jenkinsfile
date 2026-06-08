@@ -44,12 +44,10 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'sonarqube-credentials',
-                    usernameVariable: 'SONAR_LOGIN',
-                    passwordVariable: 'SONAR_PASSWORD'
-                )]) {
-                    sh './mvnw -DskipTests sonar:sonar -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=${SONAR_LOGIN} -Dsonar.password=${SONAR_PASSWORD}'
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh './mvnw sonar:sonar \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${SONAR_TOKEN}'
                 }
             }
         }
@@ -57,10 +55,7 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
-                    def qg = waitForQualityGate()
-                    if (qg.status != 'OK') {
-                        error "Pipeline aborted due to Quality Gate: ${qg.status}"
-                    }
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
