@@ -19,6 +19,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,7 +36,7 @@ class StudentServiceTest {
     @BeforeEach
     void setUp() {
         student = new Student();
-        student.setId(1L);
+        // Pas de setId, l'ID sera généré automatiquement
         student.setFirstName("John");
         student.setLastName("Doe");
         student.setEmail("john.doe@example.com");
@@ -69,6 +70,7 @@ class StudentServiceTest {
 
     @Test
     void getStudentById_WhenExists_ShouldReturnStudent() {
+        // On simule un étudiant avec un ID (via reflection si besoin, mais on ne l'utilise pas directement)
         when(studentRepository.findById(1L)).thenReturn(Optional.of(student));
 
         Student found = studentService.getStudentById(1L);
