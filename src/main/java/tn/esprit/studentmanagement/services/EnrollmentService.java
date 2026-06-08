@@ -1,6 +1,5 @@
 package tn.esprit.studentmanagement.services;
 
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tn.esprit.studentmanagement.repositories.EnrollmentRepository;
@@ -37,6 +36,9 @@ public class EnrollmentService implements IEnrollment {
 
     @Override
     public void deleteEnrollment(Long idEnrollment) {
-enrollmentRepository.deleteById(idEnrollment);
+        if (!enrollmentRepository.existsById(idEnrollment)) {
+            throw new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Enrollment not found: " + idEnrollment);
+        }
+        enrollmentRepository.deleteById(idEnrollment);
     }
 }

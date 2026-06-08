@@ -38,6 +38,9 @@ public class DepartmentService implements IDepartmentService {
 
     @Override
     public void deleteDepartment(Long idDepartment) {
-departmentRepository.deleteById(idDepartment);
+        if (!departmentRepository.existsById(idDepartment)) {
+            throw new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Department not found: " + idDepartment);
+        }
+        departmentRepository.deleteById(idDepartment);
     }
 }

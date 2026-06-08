@@ -39,6 +39,9 @@ public class CourseService implements ICourseService {
 
     @Override
     public void deleteCourse(Long id) {
+        if (!courseRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Course not found: " + id);
+        }
         courseRepository.deleteById(id);
     }
 }

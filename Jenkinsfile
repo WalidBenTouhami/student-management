@@ -15,9 +15,11 @@ pipeline {
         DOCKER_IMAGE = "student-management"
         DOCKER_TAG = "latest"
         DEPLOY_SERVER = "localhost"
-        MYSQL_ROOT_PASSWORD = "root123"
         MYSQL_DATABASE = "studentdb"
         SONAR_HOST_URL = "http://localhost:9000"
+        APP_CONTEXT_PATH = "/student"
+        APP_PORT = "8089"
+        CORS_ALLOWED_ORIGINS = "http://localhost:4200"
     }
 
     stages {
@@ -29,11 +31,11 @@ pipeline {
             }
         }
 
-        stage('Build Maven Project') {
+        stage('Build and Test') {
             steps {
                 sh 'sed -i "s/\\r$//" mvnw'
                 sh 'chmod +x mvnw'
-                sh './mvnw -DskipTests package'
+                sh './mvnw clean verify'
                 script {
                     env.GIT_COMMIT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                 }
@@ -42,22 +44,22 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                sh './mvnw -DskipTests sonar:sonar -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=*** -Dsonar.password=***'
+                withCredentials([usernamePassword(
+                    credentialsId: 'sonarqube-credentials',
+                    usernameVariable: 'SONAR_LOGIN',
+                    passwordVariable: 'SONAR_PASSWORD'
+                )]) {
+                    sh './mvnw -DskipTests sonar:sonar -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=${SONAR_LOGIN} -Dsonar.password=${SONAR_PASSWORD}'
+                }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                script {
-                    try {
-                        timeout(time: 5, unit: 'MINUTES') {
-                            def qg = waitForQualityGate()
-                            if (qg.status != 'OK') {
-                                error "Pipeline aborted due to Quality Gate: ${qg.status}"
-                            }
-                        }
-                    } catch (err) {
-                        echo "Quality Gate step skipped or failed: ${err}"
+                timeout(time: 5, unit: 'MINUTES') {
+                    def qg = waitForQualityGate()
+                    if (qg.status != 'OK') {
+                        error "Pipeline aborted due to Quality Gate: ${qg.status}"
                     }
                 }
             }
@@ -65,7 +67,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build --pull --no-cache -t ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                sh "docker build --pull -t ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG} ."
             }
         }
 
@@ -91,45 +93,90 @@ pipeline {
 
         stage('Clean environment and Deploy to server') {
             steps {
-                sh '''
-                    docker network create app-network 2>/dev/null || true
-                    docker stop mysql 2>/dev/null || true
-                    docker rm mysql 2>/dev/null || true
-                    docker stop ${DOCKER_IMAGE} 2>/dev/null || true
-                    docker rm ${DOCKER_IMAGE} 2>/dev/null || true
-                    
-                    docker run -d --name mysql \
-                        --network app-network \
-                        -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
-                        -e MYSQL_DATABASE=${MYSQL_DATABASE} \
-                        --restart unless-stopped \
-                        mysql:8.0
-                    
-                    echo "Attente de l'initialisation de MySQL..."
-                    sleep 15
-                    
-                    docker run -d --name ${DOCKER_IMAGE} \
-                        --network app-network \
-                        -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE} \
-                        -e SPRING_DATASOURCE_USERNAME=root \
-                        -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
-                        -e SERVER_PORT=8089 \
-                        -p 8089:8089 \
-                        --restart unless-stopped \
-                        ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
-                    
-                    echo "✅ Student Management déployé sur http://localhost:8089"
-                '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'mysql-root-credentials',
+                        usernameVariable: 'MYSQL_USER',
+                        passwordVariable: 'MYSQL_ROOT_PASSWORD'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'actuator-credentials',
+                        usernameVariable: 'ACTUATOR_USER',
+                        passwordVariable: 'ACTUATOR_PASSWORD'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'api-credentials',
+                        usernameVariable: 'API_USER',
+                        passwordVariable: 'API_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        docker network create app-network 2>/dev/null || true
+                        docker stop mysql 2>/dev/null || true
+                        docker rm mysql 2>/dev/null || true
+                        docker stop ${DOCKER_IMAGE} 2>/dev/null || true
+                        docker rm ${DOCKER_IMAGE} 2>/dev/null || true
+
+                        docker run -d --name mysql \
+                            --network app-network \
+                            -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
+                            -e MYSQL_DATABASE=${MYSQL_DATABASE} \
+                            --health-cmd="mysqladmin ping -h localhost -uroot -p${MYSQL_ROOT_PASSWORD}" \
+                            --health-interval=5s \
+                            --health-timeout=5s \
+                            --health-retries=12 \
+                            --restart unless-stopped \
+                            mysql:8.0
+
+                        echo "Waiting for MySQL to become healthy..."
+                        for i in $(seq 1 30); do
+                            if [ "$(docker inspect --format='{{.State.Health.Status}}' mysql 2>/dev/null)" = "healthy" ]; then
+                                echo "MySQL is ready."
+                                break
+                            fi
+                            sleep 2
+                        done
+
+                        docker run -d --name ${DOCKER_IMAGE} \
+                            --network app-network \
+                            -e SPRING_PROFILES_ACTIVE=prod \
+                            -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true \
+                            -e SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-root} \
+                            -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
+                            -e ACTUATOR_USER=${ACTUATOR_USER} \
+                            -e ACTUATOR_PASSWORD=${ACTUATOR_PASSWORD} \
+                            -e API_USER=${API_USER} \
+                            -e API_PASSWORD=${API_PASSWORD} \
+                            -e API_SECURITY_ENABLED=true \
+                            -e CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:4200} \
+                            -e SERVER_PORT=${APP_PORT} \
+                            -p ${APP_PORT}:${APP_PORT} \
+                            --restart unless-stopped \
+                            ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
+
+                        echo "Waiting for application health..."
+                        for i in $(seq 1 30); do
+                            if curl -sf -u "${ACTUATOR_USER}:${ACTUATOR_PASSWORD}" \
+                                "http://localhost:${APP_PORT}${APP_CONTEXT_PATH}/actuator/health" | grep -q '"status":"UP"'; then
+                                echo "Application is healthy."
+                                break
+                            fi
+                            sleep 3
+                        done
+
+                        echo "Student Management deployed on http://localhost:${APP_PORT}${APP_CONTEXT_PATH}"
+                    '''
+                }
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline réussi !'
+            echo 'Pipeline succeeded.'
         }
         failure {
-            echo '❌ Pipeline échoué'
+            echo 'Pipeline failed.'
         }
     }
 }
