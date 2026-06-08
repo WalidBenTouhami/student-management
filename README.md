@@ -11,7 +11,7 @@ Ce projet est conçu avec une approche **DevOps complète**. Il inclut une confi
 Si vous souhaitez faire tourner le projet sur votre propre machine pour le modifier ou le tester :
 
 ### Prérequis
-- **Java 17** (ou supérieur)
+- **Java 21** (ou supérieur)
 - **Docker** (pour la base de données locale)
 
 ### Compiler le projet
