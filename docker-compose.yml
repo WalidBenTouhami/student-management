@@ -1,44 +1,54 @@
+version: '3.8'
+
 services:
   mysql:
     image: mysql:8.0
     container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-studentdb}
+      MYSQL_USER: ${MYSQL_USER:-student_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-student_pass}
     ports:
       - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-secret}"]
-      interval: 5s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "student_user", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
       timeout: 5s
-      retries: 12
+      retries: 5
+    command: --ssl-mode=REQUIRED
+    mem_limit: 512m
+    cpus: 0.5
     networks:
       - app-network
-    restart: unless-stopped
 
   student-management:
-    build: .
+    image: walid369/student-management:latest
     container_name: student-management
-    depends_on:
-      mysql:
-        condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-studentdb}?useSSL=false&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-secret}
-      ACTUATOR_USER: ${ACTUATOR_USER:-actuator}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/studentdb?useSSL=true&requireSSL=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-student_user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-student_pass}
+      ACTUATOR_USER: ${ACTUATOR_USER:-admin}
       ACTUATOR_PASSWORD: ${ACTUATOR_PASSWORD:-changeme}
-      API_USER: ${API_USER:-api}
+      API_USER: ${API_USER:-api-user}
       API_PASSWORD: ${API_PASSWORD:-changeme}
-      API_SECURITY_ENABLED: "true"
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
+      API_SECURITY_ENABLED: ${API_SECURITY_ENABLED:-true}
       SERVER_PORT: 8089
     ports:
       - "8089:8089"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    mem_limit: 512m
+    cpus: 0.5
     networks:
       - app-network
-    restart: unless-stopped
+
+volumes:
+  mysql-data:
 
 networks:
   app-network:

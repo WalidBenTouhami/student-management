@@ -5,10 +5,13 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
+/**
+ * Service interface for Student business operations.
+ */
 public interface IStudentService {
-    public List<Student> getAllStudents();
-    public Page<Student> getAllStudentsPaginated(int page, int size);
-    public Student getStudentById(Long id);
-    public Student saveStudent(Student student);
-    public void deleteStudent(Long id);
+    List<Student> getAllStudents();
+    Page<Student> getAllStudentsPaginated(int page, int size);
+    Student getStudentById(Long id);
+    Student saveStudent(Student student);
+    void deleteStudent(Long id);
 }

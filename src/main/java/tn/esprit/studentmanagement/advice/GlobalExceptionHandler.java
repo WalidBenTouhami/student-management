@@ -1,6 +1,6 @@
 package tn.esprit.studentmanagement.advice;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -10,19 +10,34 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import tn.esprit.studentmanagement.exception.ResourceNotFoundException;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Centralized exception handling for all REST controllers.
+ *
+ * <p>In production (when the "prod" profile is active), internal exception messages are
+ * hidden from the response body to prevent information disclosure.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @Value("${spring.profiles.active:}")
-    private String activeProfile;
+    private final boolean isProdProfile;
+
+    public GlobalExceptionHandler(Environment environment) {
+        // Robust check: Environment.getActiveProfiles() returns the real active profile list,
+        // unlike @Value("${spring.profiles.active}") which can be empty or contain multiple values.
+        this.isProdProfile = Arrays.asList(environment.getActiveProfiles()).contains("prod");
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<?> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("timestamp", Instant.now().toString(), "error", "Not Found", "message", ex.getMessage()));
+                .body(Map.of(
+                        "timestamp", Instant.now().toString(),
+                        "error", "Not Found",
+                        "message", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -32,15 +47,29 @@ public class GlobalExceptionHandler {
             errors.put(fe.getField(), fe.getDefaultMessage());
         }
         return ResponseEntity.badRequest()
-                .body(Map.of("timestamp", Instant.now().toString(), "error", "Validation Failed", "details", errors));
+                .body(Map.of(
+                        "timestamp", Instant.now().toString(),
+                        "error", "Validation Failed",
+                        "details", errors));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException ex) {
+        String message = isProdProfile ? "Invalid request parameter" : ex.getMessage();
+        return ResponseEntity.badRequest()
+                .body(Map.of(
+                        "timestamp", Instant.now().toString(),
+                        "error", "Bad Request",
+                        "message", message));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGeneric(Exception ex) {
-        String message = activeProfile.contains("prod")
-                ? "An unexpected error occurred"
-                : ex.getMessage();
+        String message = isProdProfile ? "An unexpected error occurred" : ex.getMessage();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("timestamp", Instant.now().toString(), "error", "Internal Server Error", "message", message));
+                .body(Map.of(
+                        "timestamp", Instant.now().toString(),
+                        "error", "Internal Server Error",
+                        "message", message));
     }
 }

@@ -1,39 +1,31 @@
 package tn.esprit.studentmanagement.entities;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Data;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@ToString
+@Table(name = "students")
+@Data
 public class Student {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idStudent;
-    @jakarta.validation.constraints.NotBlank
+
     private String firstName;
-
-    @jakarta.validation.constraints.NotBlank
     private String lastName;
-
-    @jakarta.validation.constraints.Email
-    @jakarta.validation.constraints.NotBlank
     private String email;
-
     private String phone;
     private LocalDate dateOfBirth;
     private String address;
 
     @ManyToOne
-    @ToString.Exclude
+    @JoinColumn(name = "department_id")
     private Department department;
 
     @OneToMany(mappedBy = "student")
-    @ToString.Exclude
-    private List<Enrollment> enrollments;
+    private List<Enrollment> enrollments = new ArrayList<>();
 }
