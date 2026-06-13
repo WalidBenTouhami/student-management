@@ -21,7 +21,7 @@ services:
       - "8089:8089"
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/student_db?useSSL=false
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/student_db?useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
     depends_on:
