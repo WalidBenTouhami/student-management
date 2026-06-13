@@ -1,16 +1,21 @@
 package tn.esprit.studentmanagement.mapper;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import tn.esprit.studentmanagement.dto.CourseDTO;
 import tn.esprit.studentmanagement.entities.Course;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
+@ActiveProfiles("test")
 class CourseMapperTest {
 
-    // MapStruct with componentModel=spring generates Spring beans,
-    // but Mappers.getMapper() still works for unit tests (no Spring context needed).
-    private final CourseMapper mapper = Mappers.getMapper(CourseMapper.class);
+    @Autowired
+    private CourseMapper mapper;
 
     @Test
     void toDto_null_returnsNull() {
