@@ -9,18 +9,17 @@ Vagrant.configure("2") do |config|
   config.vm.network :private_network, ip: "192.168.56.10"
 
   # ========== REDIRECTION DES PORTS ==========
-  # Jenkins (dans la VM sur 8080 → hôte 9090)
-  # CORRECTION : Le port par défaut de Jenkins est 8080 et non 8090.
-  config.vm.network "forwarded_port", guest: 8080, host: 9090
+  # Jenkins (dans la VM sur 8080 → hôte 9091 pour éviter les conflits avec votre autre VM)
+  config.vm.network "forwarded_port", guest: 8080, host: 9091, auto_correct: true
   
   # SonarQube (VM 9000 → hôte 9000)
-  config.vm.network "forwarded_port", guest: 9000, host: 9000
+  config.vm.network "forwarded_port", guest: 9000, host: 9000, auto_correct: true
   
   # Application Student Management (Spring Boot)
-  config.vm.network "forwarded_port", guest: 8089, host: 8089
+  config.vm.network "forwarded_port", guest: 8089, host: 8089, auto_correct: true
   
   # Kubernetes NodePort (Optionnel : si Minikube tourne dans la VM)
-  config.vm.network "forwarded_port", guest: 30089, host: 30089
+  config.vm.network "forwarded_port", guest: 30089, host: 30090, auto_correct: true
 
   # ========== PARTAGE DE DOSSIERS ==========
   config.vm.synced_folder __dir__, "/home/vagrant/student-management"
@@ -147,7 +146,7 @@ Vagrant.configure("2") do |config|
     fi
 
     echo "🎉 Provisioning terminé !"
-    echo "🔗 Accès Jenkins : http://localhost:9090 (ou http://192.168.56.10:8080)"
+    echo "🔗 Accès Jenkins : http://localhost:9091 (ou http://192.168.56.10:8080)"
     echo "🔗 Accès SonarQube : http://localhost:9000 (ou http://192.168.56.10:9000)"
     echo "🔗 Accès Application : http://localhost:8089/student/swagger-ui.html"
   SHELL
