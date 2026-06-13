@@ -6,13 +6,14 @@ import tn.esprit.studentmanagement.entities.Course;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.mapstruct.factory.Mappers;
+
 /**
  * Pure unit test — no Spring context needed.
- * Instantiates the MapStruct-generated impl directly.
  */
 class CourseMapperTest {
 
-    private final CourseMapper mapper = new CourseMapperImpl();
+    private final CourseMapper mapper = Mappers.getMapper(CourseMapper.class);
 
     @Test
     void toDto_null_returnsNull() {

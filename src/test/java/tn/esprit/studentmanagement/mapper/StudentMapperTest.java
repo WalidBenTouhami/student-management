@@ -9,13 +9,14 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.mapstruct.factory.Mappers;
+
 /**
  * Pure unit test — no Spring context needed.
- * Instantiates the MapStruct-generated impl directly.
  */
 class StudentMapperTest {
 
-    private final StudentMapper mapper = new StudentMapperImpl();
+    private final StudentMapper mapper = Mappers.getMapper(StudentMapper.class);
 
     @Test
     void toDto_null_returnsNull() {

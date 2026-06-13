@@ -6,13 +6,14 @@ import tn.esprit.studentmanagement.entities.Department;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.mapstruct.factory.Mappers;
+
 /**
  * Pure unit test — no Spring context needed.
- * Instantiates the MapStruct-generated impl directly.
  */
 class DepartmentMapperTest {
 
-    private final DepartmentMapper mapper = new DepartmentMapperImpl();
+    private final DepartmentMapper mapper = Mappers.getMapper(DepartmentMapper.class);
 
     @Test
     void null_inputs_returnNull() {
