@@ -10,7 +10,7 @@ import tn.esprit.studentmanagement.entities.Department;
 import tn.esprit.studentmanagement.mapper.DepartmentMapper;
 import tn.esprit.studentmanagement.services.IDepartmentService;
 
-import java.util.List;
+
 import org.springframework.data.domain.Page;
 
 @RestController

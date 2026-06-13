@@ -10,7 +10,7 @@ import tn.esprit.studentmanagement.entities.Course;
 import tn.esprit.studentmanagement.mapper.CourseMapper;
 import tn.esprit.studentmanagement.services.ICourseService;
 
-import java.util.List;
+
 import org.springframework.data.domain.Page;
 
 @RestController
