@@ -7,7 +7,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 import tn.esprit.studentmanagement.dto.DepartmentDTO;
 import tn.esprit.studentmanagement.entities.Department;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = org.mapstruct.ReportingPolicy.IGNORE)
 public interface DepartmentMapper {
 
     DepartmentDTO toDto(Department entity);

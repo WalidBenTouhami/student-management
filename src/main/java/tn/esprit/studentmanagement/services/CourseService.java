@@ -13,6 +13,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class CourseService implements ICourseService {
 
     private final CourseRepository courseRepository;

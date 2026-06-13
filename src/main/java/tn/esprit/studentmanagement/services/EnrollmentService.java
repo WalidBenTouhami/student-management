@@ -10,6 +10,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class EnrollmentService implements IEnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository;
