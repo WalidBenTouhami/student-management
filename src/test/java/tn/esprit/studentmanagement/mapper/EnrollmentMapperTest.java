@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class EnrollmentMapperTest {
 
-    private final EnrollmentMapper mapper = new EnrollmentMapperImpl();
+    private final EnrollmentMapper mapper = new EnrollmentMapper() {};
 
     @Test
     void toDto_null_returnsNull() {
