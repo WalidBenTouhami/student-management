@@ -8,10 +8,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CourseMapperTest {
 
+    // MapStruct with componentModel=spring generates Spring beans,
+    // but Mappers.getMapper() still works for unit tests (no Spring context needed).
+    private final CourseMapper mapper = Mappers.getMapper(CourseMapper.class);
+
     @Test
-    void toDto_and_toEntity_null_handling() {
-        assertNull(CourseMapper.toDto(null));
-        assertNull(CourseMapper.toEntity(null));
+    void toDto_null_returnsNull() {
+        assertNull(mapper.toDto(null));
+    }
+
+    @Test
+    void toEntity_null_returnsNull() {
+        assertNull(mapper.toEntity(null));
     }
 
     @Test
@@ -23,7 +31,7 @@ class CourseMapperTest {
         c.setCredit(3);
         c.setDescription("Basic algebra");
 
-        CourseDTO dto = CourseMapper.toDto(c);
+        CourseDTO dto = mapper.toDto(c);
         assertNotNull(dto);
         assertEquals(10L, dto.getIdCourse());
         assertEquals("Algebra", dto.getName());
@@ -31,7 +39,7 @@ class CourseMapperTest {
         assertEquals(3, dto.getCredit());
         assertEquals("Basic algebra", dto.getDescription());
 
-        Course c2 = CourseMapper.toEntity(dto);
+        Course c2 = mapper.toEntity(dto);
         assertNotNull(c2);
         assertEquals(10L, c2.getIdCourse());
         assertEquals("Algebra", c2.getName());
