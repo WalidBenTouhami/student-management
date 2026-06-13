@@ -1,1 +1,0 @@
-{"dependencies":[["vagrant-docker-login",["= 1.0.0"]]],"checksum":"ce85692e6933c17b31a73ffdf04591978239229ac0ed900dda6290f449123c69","vagrant_version":"2.4.9"}
