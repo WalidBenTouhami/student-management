@@ -14,9 +14,16 @@ public interface CourseMapper {
     @Mapping(source = "department.idDepartment", target = "departmentId")
     CourseDTO toDto(Course entity);
 
-    @Mapping(source = "departmentId", target = "department.idDepartment")
+    @Mapping(source = "departmentId", target = "department")
     Course toEntity(CourseDTO dto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntity(CourseDTO dto, @MappingTarget Course entity);
+
+    default tn.esprit.studentmanagement.entities.Department mapDepartment(Long id) {
+        if (id == null) return null;
+        tn.esprit.studentmanagement.entities.Department d = new tn.esprit.studentmanagement.entities.Department();
+        d.setIdDepartment(id);
+        return d;
+    }
 }
