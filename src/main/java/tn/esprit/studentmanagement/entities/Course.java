@@ -18,6 +18,12 @@ public class Course {
     private String code;
     private Integer credit;
     private String description;
+    
+    private Integer capacity = 30;
+
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;
 
     @OneToMany(mappedBy = "course")
     private List<Enrollment> enrollments = new ArrayList<>();

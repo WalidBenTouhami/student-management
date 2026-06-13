@@ -104,3 +104,8 @@ appSecret:
   actuatorPassword: ""    # MUST be overridden via --set
   apiUser: ""             # MUST be overridden via --set
   apiPassword: ""         # MUST be overridden via --set
+
+# ── PodDisruptionBudget ───────────────────────────────────────────────────────
+pdb:
+  enabled: true
+  minAvailable: 1

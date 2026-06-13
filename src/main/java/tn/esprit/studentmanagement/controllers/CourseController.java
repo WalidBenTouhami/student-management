@@ -56,4 +56,10 @@ public class CourseController {
                 .toList();
         return ResponseEntity.ok(courses);
     }
+
+    @PutMapping("/{id}/assign/{departmentId}")
+    public ResponseEntity<CourseDTO> assignDepartment(@PathVariable Long id, @PathVariable Long departmentId) {
+        Course updated = courseService.assignDepartment(id, departmentId);
+        return ResponseEntity.ok(courseMapper.toDto(updated));
+    }
 }

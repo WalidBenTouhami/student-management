@@ -16,6 +16,7 @@ import java.util.List;
 public class CourseService implements ICourseService {
 
     private final CourseRepository courseRepository;
+    private final tn.esprit.studentmanagement.repositories.DepartmentRepository departmentRepository;
 
     @Override
     public List<Course> getAllCourses() {
@@ -44,5 +45,14 @@ public class CourseService implements ICourseService {
             throw new ResourceNotFoundException("Course not found: " + id);
         }
         courseRepository.deleteById(id);
+    }
+
+    @Override
+    public Course assignDepartment(Long id, Long departmentId) {
+        Course course = getCourseById(id);
+        tn.esprit.studentmanagement.entities.Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found: " + departmentId));
+        course.setDepartment(department);
+        return courseRepository.save(course);
     }
 }

@@ -7,6 +7,8 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 import tn.esprit.studentmanagement.dto.EnrollmentDTO;
 import tn.esprit.studentmanagement.entities.Enrollment;
 import tn.esprit.studentmanagement.entities.Status;
+import tn.esprit.studentmanagement.entities.Student;
+import tn.esprit.studentmanagement.entities.Course;
 
 @Mapper(componentModel = "spring")
 public interface EnrollmentMapper {
@@ -42,7 +44,16 @@ public interface EnrollmentMapper {
         // Validate that the status string is a known Status value, set null if invalid
         entity.setStatus(normalizeStatus(dto.getStatus()));
 
-        // Relations (student/course) must be resolved by the service layer
+        if (dto.getStudentId() != null) {
+            Student student = new Student();
+            student.setIdStudent(dto.getStudentId());
+            entity.setStudent(student);
+        }
+        if (dto.getCourseId() != null) {
+            Course course = new Course();
+            course.setIdCourse(dto.getCourseId());
+            entity.setCourse(course);
+        }
         return entity;
     }
 
@@ -59,6 +70,16 @@ public interface EnrollmentMapper {
         }
         if (dto.getStatus() != null) {
             entity.setStatus(normalizeStatus(dto.getStatus()));
+        }
+        if (dto.getStudentId() != null) {
+            Student student = new Student();
+            student.setIdStudent(dto.getStudentId());
+            entity.setStudent(student);
+        }
+        if (dto.getCourseId() != null) {
+            Course course = new Course();
+            course.setIdCourse(dto.getCourseId());
+            entity.setCourse(course);
         }
     }
 

@@ -63,6 +63,26 @@ public class GlobalExceptionHandler {
                         "message", message));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<?> handleIllegalState(IllegalStateException ex) {
+        String message = isProdProfile ? "Request conflict" : ex.getMessage();
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "timestamp", Instant.now().toString(),
+                        "error", "Conflict",
+                        "message", message));
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDataIntegrity(org.springframework.dao.DataIntegrityViolationException ex) {
+        String message = isProdProfile ? "Database constraint violation" : ex.getMostSpecificCause().getMessage();
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "timestamp", Instant.now().toString(),
+                        "error", "Integrity Constraint Violation",
+                        "message", message));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGeneric(Exception ex) {
         String message = isProdProfile ? "An unexpected error occurred" : ex.getMessage();

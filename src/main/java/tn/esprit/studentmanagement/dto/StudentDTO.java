@@ -8,12 +8,12 @@ import java.time.LocalDate;
 @Data
 public class StudentDTO {
     private Long idStudent;
-    @NotBlank
+    @NotBlank(message = "First name is required")
     private String firstName;
-    @NotBlank
+    @NotBlank(message = "Last name is required")
     private String lastName;
-    @Email
-    @NotBlank
+    @Email(message = "Email must be valid")
+    @NotBlank(message = "Email is required")
     private String email;
     private String phone;
     private LocalDate dateOfBirth;
