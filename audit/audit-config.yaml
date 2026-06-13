@@ -1,0 +1,31 @@
+# STUDENT MANAGEMENT PLATFORM - AUDIT CONFIGURATION
+# Used by the audit-runner script for strict DevOps checks
+
+audit:
+  # Dependency checks
+  dependency_analysis:
+    fail_on_warning: true
+    ignore_test_dependencies: false
+  
+  # OWASP Security Scanner Configuration
+  security_scan:
+    fail_on_cvss: 7.0 # Fail if Vulnerability Score is HIGH or CRITICAL
+    suppression_file: "audit/owasp-suppressions.xml"
+  
+  # JaCoCo Coverage Enforcement (Can be mapped to runner if needed)
+  coverage:
+    minimum_instruction_ratio: 0.80
+    minimum_branch_ratio: 0.70
+
+  # Code Quality
+  linting:
+    enforce_checkstyle: true
+    fail_on_violation: true
+
+  # Secrets Scanning
+  secrets:
+    enforce_env_vars: true
+    forbidden_strings:
+      - "root:root"
+      - "sa:"
+      - "password123"

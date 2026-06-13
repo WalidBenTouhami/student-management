@@ -1,0 +1,32 @@
+grafana:
+  enabled: true
+  adminPassword: "admin"
+  defaultDashboardsEnabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - student-grafana.local
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki:3100
+      access: proxy
+      isDefault: false
+  dashboards:
+    default:
+      spring-boot:
+        gnetId: 12900
+        revision: 2
+        datasource: Prometheus
+
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+coreDns:
+  enabled: false
+kubeDns:
+  enabled: true

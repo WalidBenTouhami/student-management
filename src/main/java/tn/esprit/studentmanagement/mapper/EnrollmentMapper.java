@@ -48,11 +48,15 @@ public interface EnrollmentMapper {
             Student student = new Student();
             student.setIdStudent(dto.getStudentId());
             entity.setStudent(student);
+        } else {
+            entity.setStudent(null);
         }
         if (dto.getCourseId() != null) {
             Course course = new Course();
             course.setIdCourse(dto.getCourseId());
             entity.setCourse(course);
+        } else {
+            entity.setCourse(null);
         }
         return entity;
     }
@@ -75,11 +79,15 @@ public interface EnrollmentMapper {
             Student student = new Student();
             student.setIdStudent(dto.getStudentId());
             entity.setStudent(student);
+        } else {
+            entity.setStudent(null);
         }
         if (dto.getCourseId() != null) {
             Course course = new Course();
             course.setIdCourse(dto.getCourseId());
             entity.setCourse(course);
+        } else {
+            entity.setCourse(null);
         }
     }
 

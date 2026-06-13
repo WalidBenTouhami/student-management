@@ -14,9 +14,11 @@ import tn.esprit.studentmanagement.repositories.EnrollmentRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class StatsService implements IStatsService {
 
     private final StudentRepository studentRepository;
@@ -25,6 +27,7 @@ public class StatsService implements IStatsService {
     private final EnrollmentRepository enrollmentRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public DashboardStatsDTO getDashboardStats() {
         long totalStudents = studentRepository.count();
         long totalCourses = courseRepository.count();
@@ -72,6 +75,7 @@ public class StatsService implements IStatsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<EnrollmentReportDTO> getEnrollmentReport() {
         List<Enrollment> enrollments = enrollmentRepository.findAll();
 

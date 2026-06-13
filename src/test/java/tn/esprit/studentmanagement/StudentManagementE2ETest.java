@@ -35,8 +35,8 @@ class StudentManagementE2ETest {
             "/api/departments", department, DepartmentDTO.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().getIdDepartment()).isNotNull();
-        departmentId = response.getBody().getIdDepartment();
+        assertThat(java.util.Objects.requireNonNull(response.getBody()).getIdDepartment()).isNotNull();
+        departmentId = java.util.Objects.requireNonNull(response.getBody()).getIdDepartment();
     }
 
     @Test
@@ -52,8 +52,8 @@ class StudentManagementE2ETest {
             "/api/students", student, StudentDTO.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().getIdStudent()).isNotNull();
-        studentId = response.getBody().getIdStudent();
+        assertThat(java.util.Objects.requireNonNull(response.getBody()).getIdStudent()).isNotNull();
+        studentId = java.util.Objects.requireNonNull(response.getBody()).getIdStudent();
     }
 
     @Test
@@ -67,9 +67,13 @@ class StudentManagementE2ETest {
         ResponseEntity<CourseDTO> response = restTemplate.postForEntity(
             "/api/courses", course, CourseDTO.class);
 
+        if (response.getStatusCode() != HttpStatus.CREATED) {
+            System.err.println("Response body: " + restTemplate.postForEntity("/api/courses", course, String.class).getBody());
+        }
+
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().getIdCourse()).isNotNull();
-        courseId = response.getBody().getIdCourse();
+        assertThat(java.util.Objects.requireNonNull(response.getBody()).getIdCourse()).isNotNull();
+        courseId = java.util.Objects.requireNonNull(response.getBody()).getIdCourse();
     }
 
     @Test
@@ -79,12 +83,13 @@ class StudentManagementE2ETest {
         enrollment.setStudentId(studentId);
         enrollment.setCourseId(courseId);
         enrollment.setStatus("ACTIVE");
+        enrollment.setEnrollmentDate(java.time.LocalDate.now());
 
         ResponseEntity<EnrollmentDTO> response = restTemplate.postForEntity(
             "/api/enrollments", enrollment, EnrollmentDTO.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().getIdEnrollment()).isNotNull();
+        assertThat(java.util.Objects.requireNonNull(response.getBody()).getIdEnrollment()).isNotNull();
     }
 
     @Test
@@ -93,6 +98,6 @@ class StudentManagementE2ETest {
         ResponseEntity<StudentDTO> response = restTemplate.getForEntity(
             "/api/students/" + studentId, StudentDTO.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getIdStudent()).isEqualTo(studentId);
+        assertThat(java.util.Objects.requireNonNull(response.getBody()).getIdStudent()).isEqualTo(studentId);
     }
 }
