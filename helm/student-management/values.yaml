@@ -1,0 +1,106 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Default values for student-management Helm chart.
+# Override with: helm upgrade --install ... -f values-prod.yaml
+# Or per-value:  --set image.tag=abc1234
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Namespace ─────────────────────────────────────────────────────────────────
+namespace: student-management
+
+# ── Application Image ─────────────────────────────────────────────────────────
+image:
+  repository: walid369/student-management
+  tag: latest
+  pullPolicy: Always
+
+# ── Replica count ─────────────────────────────────────────────────────────────
+replicaCount: 2
+
+# ── Service ──────────────────────────────────────────────────────────────────
+service:
+  type: NodePort
+  port: 8089
+  nodePort: 30089
+
+# ── Application config (non-sensitive) ───────────────────────────────────────
+app:
+  contextPath: /student
+  springProfiles: k8s,prod
+  corsAllowedOrigins: "http://localhost:4200"
+  port: "8089"
+  apiSecurityEnabled: "true"
+
+# ── Resource requests/limits (optimised for Minikube) ────────────────────────
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "200m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+# ── Health Probes ─────────────────────────────────────────────────────────────
+probes:
+  liveness:
+    path: /student/actuator/health/liveness
+    initialDelaySeconds: 60
+    periodSeconds: 15
+    failureThreshold: 3
+    timeoutSeconds: 5
+  readiness:
+    path: /student/actuator/health/readiness
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    failureThreshold: 3
+    timeoutSeconds: 5
+
+# ── HorizontalPodAutoscaler ───────────────────────────────────────────────────
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+# ── NetworkPolicy ─────────────────────────────────────────────────────────────
+networkPolicy:
+  enabled: true
+
+# ── Ingress ──────────────────────────────────────────────────────────────────
+ingress:
+  enabled: false
+  className: nginx
+  host: student-management.local
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+# ── MySQL ─────────────────────────────────────────────────────────────────────
+mysql:
+  image: mysql:8.0
+  database: studentdb
+  port: 3306
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: standard
+
+# ── Secrets (values are base64 encoded — override in CI/CD) ──────────────────
+# IMPORTANT: Never commit real secrets. These are placeholders.
+# In Jenkins pipeline, use --set mysqlSecret.* from Jenkins Credentials.
+mysqlSecret:
+  # echo -n 'value' | base64
+  rootPassword: ""        # MUST be overridden via --set
+  appUser: ""             # MUST be overridden via --set
+  appPassword: ""         # MUST be overridden via --set
+
+appSecret:
+  actuatorUser: ""        # MUST be overridden via --set
+  actuatorPassword: ""    # MUST be overridden via --set
+  apiUser: ""             # MUST be overridden via --set
+  apiPassword: ""         # MUST be overridden via --set

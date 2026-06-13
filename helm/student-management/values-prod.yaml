@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Production overrides — applied on top of values.yaml
+# Usage: helm upgrade --install ... -f values.yaml -f values-prod.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+
+replicaCount: 2
+
+image:
+  pullPolicy: Always
+
+app:
+  springProfiles: k8s,prod
+
+resources:
+  requests:
+    memory: "384Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+networkPolicy:
+  enabled: true
+
+mysql:
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: standard

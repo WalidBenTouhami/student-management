@@ -1,0 +1,37 @@
+Thank you for installing {{ .Chart.Name }} version {{ .Chart.AppVersion }}!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Student Management System — Deployment Summary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Namespace  : {{ .Values.namespace }}
+Replicas   : {{ .Values.replicaCount }}
+Image      : {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Access the application
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  export MINIKUBE_IP=$(minikube ip)
+  echo "App URL : http://$MINIKUBE_IP:{{ .Values.service.nodePort }}{{ .Values.app.contextPath }}"
+  echo "Health   : http://$MINIKUBE_IP:{{ .Values.service.nodePort }}{{ .Values.app.contextPath }}/actuator/health"
+  echo "Metrics  : http://$MINIKUBE_IP:{{ .Values.service.nodePort }}{{ .Values.app.contextPath }}/actuator/prometheus"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Useful commands
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Check pod status
+  kubectl get pods -n {{ .Values.namespace }}
+
+  # Follow application logs
+  kubectl logs -n {{ .Values.namespace }} -l app.kubernetes.io/name={{ include "student-management.name" . }} -f
+
+  # Check HPA status
+  kubectl get hpa -n {{ .Values.namespace }}
+
+  # Rollback to previous release
+  helm rollback {{ .Release.Name }} -n {{ .Values.namespace }}
+
+  # Uninstall
+  helm uninstall {{ .Release.Name }} -n {{ .Values.namespace }}
