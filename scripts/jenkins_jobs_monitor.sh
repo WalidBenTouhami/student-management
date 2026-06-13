@@ -1,362 +1,276 @@
-#!/bin/bash
-# ============================================================================
-# Script: jenkins_jobs_monitor.sh
-# Description: Surveillance avancée des jobs Jenkins (Optimisé)
-# Author: DevOps Ninja Team
-# Version: 3.1 - Bug fixes
-# ============================================================================
-
+#!/usr/bin/env bash
+# ═══════════════════════════════════════════════════════════════════════════
+#  Student Management — Jenkins + Kubernetes Monitor
+#  Usage: ./scripts/jenkins_jobs_monitor.sh [OPTIONS]
+#
+#  Options:
+#    -u  Jenkins URL         (default: http://localhost:8080)
+#    -j  Job name            (default: student-management)
+#    -n  K8s namespace       (default: student-management)
+#    -w  Watch interval (s)  (default: 10)
+#    -h  Show help
+# ═══════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
-# ============================================================================
-# Configuration - Variables d'environnement supportées
-# ============================================================================
-readonly SCRIPT_NAME=$(basename "$0")
+# ── Defaults ──────────────────────────────────────────────────────────────────
 JENKINS_URL="${JENKINS_URL:-http://localhost:8080}"
-JENKINS_USER="${JENKINS_USER:-admin}"
-JENKINS_TOKEN="${JENKINS_TOKEN:-${JENKINS_PASS:-}}"
-readonly LOG_FILE="${JENKINS_MONITOR_LOG:-/tmp/jenkins-jobs-monitor.log}" # Changé vers /tmp pour éviter les erreurs de permission
-readonly REPORT_FILE="${JENKINS_MONITOR_REPORT:-/tmp/jenkins-jobs-report.json}"
-readonly MAX_LOG_SIZE="${JENKINS_MAX_LOG_SIZE:-10485760}"
-readonly REQUEST_TIMEOUT="${JENKINS_REQUEST_TIMEOUT:-10}"
-readonly RETRY_COUNT="${JENKINS_RETRY_COUNT:-3}"
-readonly RETRY_DELAY="${JENKINS_RETRY_DELAY:-2}"
+JOB_NAME="${JOB_NAME:-student-management}"
+K8S_NAMESPACE="${K8S_NAMESPACE:-student-management}"
+WATCH_INTERVAL=10
+MINIKUBE_IP=""
 
-# Couleurs (désactivées si NO_COLOR est défini)
-if [[ -z "${NO_COLOR:-}" ]] && [[ -t 1 ]]; then
-    readonly RED='\033[0;31m'
-    readonly GREEN='\033[0;32m'
-    readonly YELLOW='\033[1;33m'
-    readonly BLUE='\033[0;34m'
-    readonly CYAN='\033[0;36m'
-    readonly MAGENTA='\033[0;35m'
-    readonly NC='\033[0m'
-else
-    readonly RED=''; readonly GREEN=''; readonly YELLOW=''
-    readonly BLUE=''; readonly CYAN=''; readonly MAGENTA=''; readonly NC=''
-fi
+# ── Colors ────────────────────────────────────────────────────────────────────
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'  # No color
 
-# Flags
-VERBOSE=false
-JSON_OUTPUT=false
-WATCH_MODE=false
-REFRESH_SEC=5
-CRUMB=""
-
-# ============================================================================
-# Fonctions utilitaires
-# ============================================================================
-
-log() {
-    local level="$1"
-    local message="$2"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local log_line="${timestamp} [${level}] ${message}"
-
-    # Affiche dans le terminal
-    echo -e "$log_line"
-    # Tente d'écrire dans le fichier silencieusement
-    echo -e "$log_line" >> "$LOG_FILE" 2>/dev/null || true
-}
-
-log_info() { log "INFO" "$1"; }
-log_error() { log "${RED}ERROR${NC}" "$1"; }
-log_success() { log "${GREEN}SUCCESS${NC}" "$1"; }
-log_warn() { log "${YELLOW}WARN${NC}" "$1"; }
-
-print_header() {
-    echo ""
-    echo "╔════════════════════════════════════════════════════════════════════════════════╗"
-    echo "║                         SURVEILLANCE DES JOBS JENKINS                          ║"
-    echo "╠════════════════════════════════════════════════════════════════════════════════╣"
-    printf "║ %-30s ║ %-30s ║ %-10s ║ %-20s ║\n" "JOB" "STATUT" "BUILD #" "DERNIER RÉSULTAT"
-    echo "╠════════════════════════════════════════════════════════════════════════════════╣"
-}
-
-print_footer() {
-    echo "╚════════════════════════════════════════════════════════════════════════════════╝"
-    echo ""
-    local total=$(curl_with_auth "${JENKINS_URL}/api/json" 2>/dev/null | grep -o '"name"' | wc -l)
-    echo -e "${CYAN}📊 RÉSUMÉ : $total jobs${NC}"
-}
-
-# Fonction d'authentification unifiée avec gestion du crumb
-curl_with_auth() {
-    local url="$1"
-    local method="${2:-GET}"
-    local output=""
-    local retry=0
-    local data="${3:-}"
-
-    local curl_opts=(
-        -s
-        -X "$method"
-        --connect-timeout "$REQUEST_TIMEOUT"
-        --max-time "$REQUEST_TIMEOUT"
-        -c "/tmp/jenkins_cookie.txt"
-        -b "/tmp/jenkins_cookie.txt"
-    )
-
-    # Ajouter authentification si token ou password fourni
-    if [[ -n "$JENKINS_TOKEN" ]]; then
-        curl_opts+=(--user "${JENKINS_USER}:${JENKINS_TOKEN}")
-    fi
-
-    # Ajouter le crumb s'il existe
-    if [[ -n "$CRUMB" ]]; then
-        local crumb_field=$(echo "$CRUMB" | cut -d':' -f1)
-        local crumb_value=$(echo "$CRUMB" | cut -d':' -f2-)
-        curl_opts+=(-H "${crumb_field}: ${crumb_value}")
-    fi
-
-    # Ajouter les données pour POST
-    if [[ -n "$data" ]]; then
-        curl_opts+=(-H "Content-Type: application/json" -d "$data")
-    fi
-
-    # Retry logic
-    while [[ $retry -lt $RETRY_COUNT ]]; do
-        output=$(curl "${curl_opts[@]}" "$url" 2>/dev/null) && break
-        retry=$((retry + 1))
-        [[ $retry -lt $RETRY_COUNT ]] && sleep "$RETRY_DELAY"
-    done
-
-    echo "$output"
-}
-
-# Récupération du crumb
-get_crumb() {
-    # Si pas de token fourni, pas besoin de crumb pour les GET
-    if [[ -z "$JENKINS_TOKEN" ]]; then
-        return 0
-    fi
-
-    local response=$(curl_with_auth "${JENKINS_URL}/crumbIssuer/api/json" 2>/dev/null)
-    if [[ -n "$response" ]]; then
-        local crumb_field=$(echo "$response" | grep -o '"crumbRequestField":"[^"]*"' | cut -d'"' -f4)
-        local crumb_value=$(echo "$response" | grep -o '"crumb":"[^"]*"' | cut -d'"' -f4)
-        if [[ -n "$crumb_field" ]] && [[ -n "$crumb_value" ]]; then
-            CRUMB="${crumb_field}:${crumb_value}"
-            log_info "✓ Crumb récupéré avec succès"
-            return 0
-        fi
-    fi
-
-    log_warn "Impossible de récupérer le crumb (peut nécessiter authentification)"
-    return 1
-}
-
-get_status_icon() {
-    local color="$1"
-    case "$color" in
-        "blue") echo -e "${GREEN}● SUCCÈS${NC}" ;;
-        "blue_anime") echo -e "${BLUE}▶ EN COURS${NC}" ;;
-        "red") echo -e "${RED}● ÉCHEC${NC}" ;;
-        "red_anime") echo -e "${RED}▶ EN COURS (ECHEC)${NC}" ;;
-        "yellow") echo -e "${YELLOW}⚠ INSTABLE${NC}" ;;
-        "yellow_anime") echo -e "${YELLOW}▶ EN COURS (INSTABLE)${NC}" ;;
-        "grey") echo -e "${MAGENTA}○ INACTIF${NC}" ;;
-        "disabled") echo -e "${MAGENTA}⊘ DÉSACTIVÉ${NC}" ;;
-        "notbuilt") echo -e "${MAGENTA}◌ NON BUILD${NC}" ;;
-        *) echo -e "${NC}? INCONNU${NC}" ;;
+# ── Parse args ────────────────────────────────────────────────────────────────
+while getopts "u:j:n:w:h" opt; do
+    case $opt in
+        u) JENKINS_URL="$OPTARG" ;;
+        j) JOB_NAME="$OPTARG" ;;
+        n) K8S_NAMESPACE="$OPTARG" ;;
+        w) WATCH_INTERVAL="$OPTARG" ;;
+        h) show_help; exit 0 ;;
+        *) echo "Unknown option: -$OPTARG" >&2; exit 1 ;;
     esac
-}
-
-get_job_color() {
-    local job="$1"
-    local encoded_job=$(printf '%s' "$job" | sed 's/\//%2F/g')
-    local response=$(curl_with_auth "${JENKINS_URL}/job/${encoded_job}/api/json?tree=color")
-    echo "$response" | grep -o '"color":"[^"]*"' | cut -d'"' -f4 | head -1 | sed 's/notfound/grey/'
-}
-
-get_last_build_number() {
-    local job="$1"
-    local encoded_job=$(printf '%s' "$job" | sed 's/\//%2F/g')
-    local response=$(curl_with_auth "${JENKINS_URL}/job/${encoded_job}/api/json?tree=lastBuild[number]")
-    echo "$response" | grep -o '"number":[0-9]*' | head -1 | cut -d':' -f2 | sed 's/^$/0/'
-}
-
-get_last_build_result() {
-    local job="$1"
-    local encoded_job=$(printf '%s' "$job" | sed 's/\//%2F/g')
-    local response=$(curl_with_auth "${JENKINS_URL}/job/${encoded_job}/lastBuild/api/json?tree=result" 2>/dev/null)
-    echo "$response" | grep -o '"result":"[^"]*"' | cut -d'"' -f4 | sed 's|^$|N/A|'
-}
-
-check_jenkins() {
-    log_info "Vérification de la connexion à Jenkins..."
-    local response=$(curl_with_auth "${JENKINS_URL}/api/json?tree=mode")
-    if [[ -z "$response" ]] || echo "$response" | grep -qi "Authentication required\\|HTTP 403"; then
-        echo -e "${RED}❌ Jenkins n'est pas accessible sur ${JENKINS_URL}${NC}"
-        echo -e "${YELLOW}💡 Astuce: Définissez les variables d'environnement:${NC}"
-        echo "   export JENKINS_TOKEN='votre_token'"
-        echo "   export JENKINS_URL='http://votre_jenkins:8080'"
-        return 1
-    fi
-    log_success "✓ Jenkins accessible"
-    return 0
-}
-
-list_jobs() {
-    curl_with_auth "${JENKINS_URL}/api/json?tree=jobs[name]" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | sort
-}
-
-display_jobs() {
-    local jobs=$(list_jobs)
-    local count=0
-    local failed_jobs=0
-    local success_jobs=0
-
-    print_header
-
-    while IFS= read -r job; do
-        [[ -z "$job" ]] && continue
-        local color=$(get_job_color "$job")
-        local status=$(get_status_icon "$color")
-        local build_num=$(get_last_build_number "$job")
-        local build_result=$(get_last_build_result "$job")
-
-        printf "║ %-30s ║ %-30s ║ %-10s ║ %-20s ║\n" "$job" "$status" "$build_num" "$build_result"
-
-        case "$color" in
-            "blue"|"blue_anime") success_jobs=$((success_jobs + 1)) ;;
-            "red"|"red_anime") failed_jobs=$((failed_jobs + 1)) ;;
-        esac
-        count=$((count + 1))
-
-    done <<< "$jobs"
-
-    print_footer
-    echo -e "${CYAN}📈 STATS: ${GREEN}$success_jobs succès${NC} | ${RED}$failed_jobs échecs${NC} | Total: $count${NC}"
-}
-
-display_json() {
-    local first=true
-    local json_output
-    json_output=$(
-        echo '{ "jobs": ['
-        while IFS= read -r job; do
-            [[ -z "$job" ]] && continue
-            $first || echo ','
-            first=false
-            local color=$(get_job_color "$job")
-            local build_num=$(get_last_build_number "$job")
-            local build_result=$(get_last_build_result "$job")
-
-            cat <<EOF
-        {
-            "name": "$job",
-            "status": "${color:-unknown}",
-            "last_build": ${build_num:-0},
-            "last_result": "${build_result:-N/A}"
-        }
-EOF
-        done <<< "$(list_jobs)"
-        echo '] }'
-    )
-
-    if command -v jq >/dev/null 2>&1; then
-        echo "$json_output" | jq '.' > "$REPORT_FILE"
-        echo "$json_output" | jq '.'
-    else
-        echo "$json_output" > "$REPORT_FILE"
-        echo "$json_output"
-    fi
-}
-
-watch_jobs() {
-    while true; do
-        clear
-        echo -e "${CYAN}🔄 Rafraîchissement toutes les ${REFRESH_SEC} secondes (Ctrl+C pour quitter)${NC}"
-        echo -e "${CYAN}📅 $(date '+%Y-%m-%d %H:%M:%S')${NC}"
-        echo -e "${CYAN}🔐 Utilisateur: ${JENKINS_USER} | URL: ${JENKINS_URL}${NC}"
-        display_jobs
-        sleep "$REFRESH_SEC"
-    done
-}
-
-show_usage() {
-    cat << EOF
-╔═══════════════════════════════════════════════════════════════════════════╗
-║                    JENKINS JOBS MONITOR - USAGE                           ║
-╠═══════════════════════════════════════════════════════════════════════════╣
-║                                                                           ║
-║ Usage: $SCRIPT_NAME [OPTIONS]                                             ║
-║                                                                           ║
-║ Options:                                                                  ║
-║   --url=<url>       URL de Jenkins (défaut: http://localhost:8080)       ║
-║   --user=<user>     Utilisateur Jenkins (défaut: admin)                   ║
-║   --password=<pwd>  Mot de passe ou token Jenkins                        ║
-║   --json            Sortie au format JSON                                ║
-║   --watch           Mode surveillance (rafraîchissement auto)            ║
-║   --refresh=<sec>   Intervalle de rafraîchissement (défaut: 5s)          ║
-║   --verbose, -v     Mode verbeux                                         ║
-║   --help, -h        Affiche cette aide                                   ║
-║                                                                           ║
-║ Variables d'environnement supportées:                                     ║
-║   JENKINS_URL       URL de Jenkins                                       ║
-║   JENKINS_USER      Utilisateur Jenkins                                  ║
-║   JENKINS_TOKEN     Token API Jenkins (recommandé)                       ║
-║   JENKINS_PASS      Alternative à JENKINS_TOKEN (moins sécurisé)         ║
-║   JENKINS_REQUEST_TIMEOUT  Timeout des requêtes (défaut: 10s)            ║
-║   NO_COLOR           Désactive les couleurs                              ║
-║                                                                           ║
-╚═══════════════════════════════════════════════════════════════════════════╝
-EOF
-}
-
-# ============================================================================
-# Initialisation et Main
-# ============================================================================
-
-# Rotation des logs
-if [[ -f "$LOG_FILE" ]] && [[ $(stat -c%s "$LOG_FILE" 2>/dev/null || echo 0) -gt $MAX_LOG_SIZE ]]; then
-    mv "$LOG_FILE" "${LOG_FILE}.old" 2>/dev/null || true
-fi
-
-# Parse arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --url=*) JENKINS_URL="${1#*=}" ;;
-        --user=*) JENKINS_USER="${1#*=}" ;;
-        --password=*) JENKINS_TOKEN="${1#*=}" ;;
-        --json) JSON_OUTPUT=true ;;
-        --watch) WATCH_MODE=true ;;
-        --refresh=*) REFRESH_SEC="${1#*=}" ;;
-        --verbose|-v) VERBOSE=true; set -x ;;
-        --help|-h) show_usage; exit 0 ;;
-        *) echo "Option inconnue: $1"; show_usage; exit 1 ;;
-    esac
-    shift
 done
 
-# Affichage de la bannière
-echo -e "${CYAN}"
-echo "╔══════════════════════════════════════════════════════════════════╗"
-echo "║     🚀 JENKINS JOBS MONITOR - NINJA DevOps EDITION 🚀           ║"
-echo "╚══════════════════════════════════════════════════════════════════╝"
-echo -e "${NC}"
+show_help() {
+    cat <<EOF
+Usage: $0 [OPTIONS]
 
-log_info "=== Démarrage de la surveillance Jenkins ==="
-log_info "URL: ${JENKINS_URL}"
-log_info "User: ${JENKINS_USER}"
-[[ -n "$JENKINS_TOKEN" ]] && log_info "Token: ************"
+Options:
+  -u  Jenkins URL         (default: http://localhost:8080)
+  -j  Job name            (default: student-management)
+  -n  K8s namespace       (default: student-management)
+  -w  Watch interval (s)  (default: 10)
+  -h  Show this help
 
-# Récupération du crumb
-get_crumb || true
+Environment variables:
+  JENKINS_URL, JOB_NAME, K8S_NAMESPACE
+  JENKINS_USER, JENKINS_TOKEN (for authenticated requests)
+  ACTUATOR_USER, ACTUATOR_PASSWORD (for health check)
+EOF
+}
 
-# Vérification de Jenkins
-if ! check_jenkins; then
-    exit 1
-fi
+# ── Helpers ───────────────────────────────────────────────────────────────────
+print_header() {
+    local title="$1"
+    local width=70
+    local line
+    line=$(printf '═%.0s' $(seq 1 $width))
+    echo -e "\n${CYAN}${BOLD}╔${line}╗${NC}"
+    printf "${CYAN}${BOLD}║  %-66s  ║${NC}\n" "$title"
+    echo -e "${CYAN}${BOLD}╚${line}╝${NC}"
+}
 
-# Exécution du mode demandé
-if [[ "$WATCH_MODE" = true ]]; then
-    watch_jobs
-elif [[ "$JSON_OUTPUT" = true ]]; then
-    display_json
+print_section() {
+    echo -e "\n${BLUE}${BOLD}── $1 ──────────────────────────────────────────────────────${NC}"
+}
+
+status_color() {
+    local status="$1"
+    case "$status" in
+        SUCCESS|UP|Running|PASSED)  echo -e "${GREEN}${status}${NC}" ;;
+        FAILURE|DOWN|CRITICAL|FAILED) echo -e "${RED}${status}${NC}" ;;
+        UNSTABLE|WARNING|Pending)   echo -e "${YELLOW}${status}${NC}" ;;
+        *)                          echo -e "${CYAN}${status}${NC}" ;;
+    esac
+}
+
+jenkins_api() {
+    local path="$1"
+    local auth_header=""
+    if [[ -n "${JENKINS_USER:-}" && -n "${JENKINS_TOKEN:-}" ]]; then
+        auth_header="-u ${JENKINS_USER}:${JENKINS_TOKEN}"
+    fi
+    # shellcheck disable=SC2086
+    curl -sf $auth_header "${JENKINS_URL}${path}" 2>/dev/null || echo "{}"
+}
+
+# ── Jenkins Status ─────────────────────────────────────────────────────────────
+show_jenkins_status() {
+    print_section "Jenkins Pipeline Status"
+
+    # Check Jenkins reachability
+    if ! curl -sf --connect-timeout 3 "${JENKINS_URL}" > /dev/null 2>&1; then
+        echo -e "  ${RED}❌ Jenkins unreachable at ${JENKINS_URL}${NC}"
+        return
+    fi
+    echo -e "  ${GREEN}✅ Jenkins online: ${JENKINS_URL}${NC}"
+
+    # Get last build info
+    local build_json
+    build_json=$(jenkins_api "/job/${JOB_NAME}/lastBuild/api/json" 2>/dev/null || echo "{}")
+
+    if [[ "$build_json" == "{}" ]]; then
+        echo -e "  ${YELLOW}⚠️  Job '${JOB_NAME}' not found or no builds yet${NC}"
+        return
+    fi
+
+    local build_num result duration timestamp url
+    build_num=$(echo "$build_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('number','?'))" 2>/dev/null || echo "?")
+    result=$(echo "$build_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('result','IN_PROGRESS') or 'IN_PROGRESS')" 2>/dev/null || echo "?")
+    duration=$(echo "$build_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(round(d.get('duration',0)/1000/60,1))" 2>/dev/null || echo "0")
+    url=$(echo "$build_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('url',''))" 2>/dev/null || echo "")
+
+    echo ""
+    printf "  %-20s %s\n" "Job:" "${BOLD}${JOB_NAME}${NC}"
+    printf "  %-20s %s\n" "Last Build:" "#${build_num}"
+    printf "  %-20s " "Status:"
+    status_color "$result"
+    printf "  %-20s %s\n" "Duration:" "${duration} min"
+    printf "  %-20s %s\n" "URL:" "${url}"
+
+    # Show last 3 builds
+    echo ""
+    echo -e "  ${BOLD}Last builds:${NC}"
+    for i in 1 2 3; do
+        local b_json
+        b_json=$(jenkins_api "/job/${JOB_NAME}/lastBuild~${i}/api/json" 2>/dev/null || echo "{}")
+        local b_num b_res
+        b_num=$(echo "$b_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('number','?'))" 2>/dev/null || echo "?")
+        b_res=$(echo "$b_json" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('result','?') or '?')" 2>/dev/null || echo "?")
+        [[ "$b_num" == "?" ]] && continue
+        printf "    Build #%-6s " "${b_num}"
+        status_color "$b_res"
+    done
+}
+
+# ── Kubernetes Status ──────────────────────────────────────────────────────────
+show_k8s_status() {
+    print_section "Kubernetes Cluster Status"
+
+    if ! kubectl cluster-info > /dev/null 2>&1; then
+        echo -e "  ${RED}❌ kubectl not available or cluster not reachable${NC}"
+        return
+    fi
+
+    # Get Minikube IP
+    MINIKUBE_IP=$(minikube ip 2>/dev/null || echo "unknown")
+    echo -e "  ${GREEN}✅ Cluster reachable | Minikube IP: ${BOLD}${MINIKUBE_IP}${NC}"
+
+    # Pods
+    echo ""
+    echo -e "  ${BOLD}Pods (namespace: ${K8S_NAMESPACE}):${NC}"
+    if kubectl get pods -n "$K8S_NAMESPACE" --no-headers 2>/dev/null | head -20 | while read -r line; do
+        local pod_name status ready
+        pod_name=$(echo "$line" | awk '{print $1}')
+        ready=$(echo "$line" | awk '{print $2}')
+        status=$(echo "$line" | awk '{print $3}')
+        printf "    %-50s %-12s " "$pod_name" "$ready"
+        status_color "$status"
+    done; then
+        :
+    else
+        echo -e "    ${YELLOW}No pods found in namespace ${K8S_NAMESPACE}${NC}"
+    fi
+
+    # Services
+    echo ""
+    echo -e "  ${BOLD}Services:${NC}"
+    kubectl get svc -n "$K8S_NAMESPACE" --no-headers 2>/dev/null | while read -r line; do
+        printf "    %s\n" "$line"
+    done || echo -e "    ${YELLOW}No services found${NC}"
+
+    # HPA
+    echo ""
+    echo -e "  ${BOLD}HPA (HorizontalPodAutoscaler):${NC}"
+    kubectl get hpa -n "$K8S_NAMESPACE" 2>/dev/null || echo -e "    ${YELLOW}No HPA found${NC}"
+
+    # Helm releases
+    echo ""
+    echo -e "  ${BOLD}Helm Releases:${NC}"
+    helm list -n "$K8S_NAMESPACE" 2>/dev/null || echo -e "    ${YELLOW}helm not available${NC}"
+}
+
+# ── Application Health ─────────────────────────────────────────────────────────
+show_app_health() {
+    print_section "Application Health"
+
+    [[ -z "$MINIKUBE_IP" || "$MINIKUBE_IP" == "unknown" ]] && \
+        MINIKUBE_IP=$(minikube ip 2>/dev/null || echo "localhost")
+
+    local base_url="http://${MINIKUBE_IP}:30089/student"
+    local auth=""
+    if [[ -n "${ACTUATOR_USER:-}" && -n "${ACTUATOR_PASSWORD:-}" ]]; then
+        auth="-u ${ACTUATOR_USER}:${ACTUATOR_PASSWORD}"
+    fi
+
+    echo -e "  Checking: ${CYAN}${base_url}/actuator/health${NC}"
+
+    # shellcheck disable=SC2086
+    local health_response
+    # shellcheck disable=SC2086
+    health_response=$(curl -sf --connect-timeout 5 $auth "${base_url}/actuator/health" 2>/dev/null || echo "")
+
+    if [[ -z "$health_response" ]]; then
+        echo -e "  ${RED}❌ Application not reachable${NC}"
+        return
+    fi
+
+    local status
+    status=$(echo "$health_response" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','UNKNOWN'))" 2>/dev/null || echo "UNKNOWN")
+    printf "  Status: "
+    status_color "$status"
+
+    # Liveness
+    # shellcheck disable=SC2086
+    local liveness
+    liveness=$(curl -sf --connect-timeout 3 $auth "${base_url}/actuator/health/liveness" 2>/dev/null | \
+               python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "?")
+    printf "  Liveness: "
+    status_color "$liveness"
+
+    # Readiness
+    # shellcheck disable=SC2086
+    local readiness
+    readiness=$(curl -sf --connect-timeout 3 $auth "${base_url}/actuator/health/readiness" 2>/dev/null | \
+                python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null || echo "?")
+    printf "  Readiness: "
+    status_color "$readiness"
+
+    # Metrics spot-check
+    # shellcheck disable=SC2086
+    local metric_count
+    metric_count=$(curl -sf --connect-timeout 3 "${base_url}/actuator/prometheus" 2>/dev/null | grep -c "^# HELP" || echo "0")
+    echo -e "  Prometheus metrics: ${CYAN}${metric_count} metrics exposed${NC}"
+}
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+main() {
+    while true; do
+        clear
+        print_header "Student Management — DevOps Monitor  [$(date '+%Y-%m-%d %H:%M:%S')]"
+        echo -e "  ${BOLD}Jenkins:${NC} ${JENKINS_URL}  |  ${BOLD}K8s NS:${NC} ${K8S_NAMESPACE}  |  ${BOLD}Refresh:${NC} ${WATCH_INTERVAL}s"
+
+        show_jenkins_status
+        show_k8s_status
+        show_app_health
+
+        print_section "Quick Commands"
+        echo "  make k8s-status     → kubectl resources"
+        echo "  make k8s-logs       → follow app logs"
+        echo "  make k8s-rollback   → rollback Helm release"
+        echo "  make health         → curl health endpoint"
+        echo ""
+        echo -e "  ${YELLOW}Press Ctrl+C to exit${NC}  |  Next refresh in ${WATCH_INTERVAL}s..."
+
+        sleep "$WATCH_INTERVAL"
+    done
+}
+
+# Run once if -o flag, else loop
+if [[ "${1:-}" == "-o" ]]; then
+    print_header "Student Management — DevOps Monitor  [$(date '+%Y-%m-%d %H:%M:%S')]"
+    show_jenkins_status
+    show_k8s_status
+    show_app_health
 else
-    display_jobs
+    main
 fi
-
-log_success "=== Surveillance terminée ==="
