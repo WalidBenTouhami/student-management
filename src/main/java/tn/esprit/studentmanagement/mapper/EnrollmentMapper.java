@@ -6,54 +6,50 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import tn.esprit.studentmanagement.dto.EnrollmentDTO;
 import tn.esprit.studentmanagement.entities.Enrollment;
+import tn.esprit.studentmanagement.entities.Status;
 
 @Mapper(componentModel = "spring")
 public interface EnrollmentMapper {
 
-    // Conversion Entity -> DTO
+    // Conversion Entity → DTO
+    // entity.status is String, dto.status is String — direct mapping
     default EnrollmentDTO toDto(Enrollment entity) {
-        if (entity == null)
-            return null;
+        if (entity == null) return null;
 
         EnrollmentDTO dto = new EnrollmentDTO();
         dto.setIdEnrollment(entity.getIdEnrollment());
         dto.setEnrollmentDate(entity.getEnrollmentDate());
         dto.setGrade(entity.getGrade());
-        dto.setStatus(entity.getStatus());
+        dto.setStatus(entity.getStatus());   // String → String
 
-        // Extraire les IDs des relations
         if (entity.getStudent() != null) {
             dto.setStudentId(entity.getStudent().getIdStudent());
         }
         if (entity.getCourse() != null) {
             dto.setCourseId(entity.getCourse().getIdCourse());
         }
-
         return dto;
     }
 
-    // Conversion DTO -> Entity
+    // Conversion DTO → Entity
     default Enrollment toEntity(EnrollmentDTO dto) {
-        if (dto == null)
-            return null;
+        if (dto == null) return null;
 
         Enrollment entity = new Enrollment();
         entity.setIdEnrollment(dto.getIdEnrollment());
         entity.setEnrollmentDate(dto.getEnrollmentDate());
         entity.setGrade(dto.getGrade());
-        entity.setStatus(dto.getStatus());
+        // Validate that the status string is a known Status value, set null if invalid
+        entity.setStatus(normalizeStatus(dto.getStatus()));
 
-        // Les relations student et course doivent être définies par le service
-        // Ne pas les mapper directement depuis le DTO
-
+        // Relations (student/course) must be resolved by the service layer
         return entity;
     }
 
-    // Mise à jour de l'entité
+    // Partial update — ignore null values
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     default void updateEntity(EnrollmentDTO dto, @MappingTarget Enrollment entity) {
-        if (dto == null)
-            return;
+        if (dto == null) return;
 
         if (dto.getEnrollmentDate() != null) {
             entity.setEnrollmentDate(dto.getEnrollmentDate());
@@ -62,10 +58,20 @@ public interface EnrollmentMapper {
             entity.setGrade(dto.getGrade());
         }
         if (dto.getStatus() != null) {
-            entity.setStatus(dto.getStatus());
+            entity.setStatus(normalizeStatus(dto.getStatus()));
         }
+    }
 
-        // Note: student et course ne sont pas mis à jour via le DTO
-        // Ils doivent être gérés séparément dans les services
+    /**
+     * Normalize a status string: returns uppercase name if it matches a known Status enum,
+     * otherwise returns null. This prevents storing garbage values in the DB.
+     */
+    default String normalizeStatus(String statusStr) {
+        if (statusStr == null) return null;
+        try {
+            return Status.valueOf(statusStr.toUpperCase()).name();
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }
