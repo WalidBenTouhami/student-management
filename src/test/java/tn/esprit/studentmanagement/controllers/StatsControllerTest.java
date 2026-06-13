@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(StatsController.class)
 @WithMockUser(roles = "API")
-@SuppressWarnings("null")
+
 class StatsControllerTest {
 
     @Autowired
