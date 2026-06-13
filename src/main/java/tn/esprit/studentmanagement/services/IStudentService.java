@@ -14,4 +14,6 @@ public interface IStudentService {
     Student getStudentById(Long id);
     Student saveStudent(Student student);
     void deleteStudent(Long id);
+    List<Student> getStudentsByDepartment(Long departmentId);
 }
+

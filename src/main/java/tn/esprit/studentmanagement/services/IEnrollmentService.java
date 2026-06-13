@@ -14,8 +14,17 @@ public interface IEnrollmentService {
 
     void deleteEnrollment(Long id);
 
-    // Méthodes supplémentaires
+    // Named by ID (used in implementations)
     List<Enrollment> getEnrollmentsByStudentId(Long studentId);
 
     List<Enrollment> getEnrollmentsByCourseId(Long courseId);
+
+    // Convenience aliases used by the controller
+    default List<Enrollment> getEnrollmentsByStudent(Long studentId) {
+        return getEnrollmentsByStudentId(studentId);
+    }
+
+    default List<Enrollment> getEnrollmentsByCourse(Long courseId) {
+        return getEnrollmentsByCourseId(courseId);
+    }
 }

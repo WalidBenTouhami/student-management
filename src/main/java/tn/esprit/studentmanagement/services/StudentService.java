@@ -44,4 +44,9 @@ public class StudentService implements IStudentService {
         }
         studentRepository.deleteById(id);
     }
+
+    @Override
+    public List<Student> getStudentsByDepartment(Long departmentId) {
+        return studentRepository.findByDepartment_Id(departmentId);
+    }
 }
