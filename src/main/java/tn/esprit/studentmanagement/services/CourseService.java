@@ -1,29 +1,30 @@
 package tn.esprit.studentmanagement.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import tn.esprit.studentmanagement.entities.Course;
-import tn.esprit.studentmanagement.repositories.CourseRepository;
 import tn.esprit.studentmanagement.exception.ResourceNotFoundException;
+import tn.esprit.studentmanagement.repositories.CourseRepository;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CourseService implements ICourseService {
 
-    @Autowired
-    private CourseRepository courseRepository;
+    private final CourseRepository courseRepository;
 
     @Override
     public List<Course> getAllCourses() {
-        return courseRepository.findAll();
+        return courseRepository.findAll(Sort.by("name"));
     }
 
     @Override
     public Page<Course> getAllCoursesPaginated(int page, int size) {
-        return courseRepository.findAll(PageRequest.of(page, size));
+        return courseRepository.findAll(PageRequest.of(page, size, Sort.by("name")));
     }
 
     @Override

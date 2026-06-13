@@ -1,17 +1,18 @@
 package tn.esprit.studentmanagement.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import tn.esprit.studentmanagement.repositories.EnrollmentRepository;
 import tn.esprit.studentmanagement.entities.Enrollment;
+import tn.esprit.studentmanagement.exception.ResourceNotFoundException;
+import tn.esprit.studentmanagement.repositories.EnrollmentRepository;
+
 import java.util.List;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 
 @Service
-public class EnrollmentService implements IEnrollment {
-    @Autowired
-    EnrollmentRepository enrollmentRepository;
+@RequiredArgsConstructor
+public class EnrollmentService implements IEnrollmentService {
+
+    private final EnrollmentRepository enrollmentRepository;
 
     @Override
     public List<Enrollment> getAllEnrollments() {
@@ -19,14 +20,9 @@ public class EnrollmentService implements IEnrollment {
     }
 
     @Override
-    public Page<Enrollment> getAllEnrollmentsPaginated(int page, int size) {
-        return enrollmentRepository.findAll(PageRequest.of(page, size));
-    }
-
-    @Override
-    public Enrollment getEnrollmentById(Long idEnrollment) {
-        return enrollmentRepository.findById(idEnrollment)
-                .orElseThrow(() -> new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Enrollment not found: " + idEnrollment));
+    public Enrollment getEnrollmentById(Long id) {
+        return enrollmentRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found: " + id));
     }
 
     @Override
@@ -35,10 +31,20 @@ public class EnrollmentService implements IEnrollment {
     }
 
     @Override
-    public void deleteEnrollment(Long idEnrollment) {
-        if (!enrollmentRepository.existsById(idEnrollment)) {
-            throw new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Enrollment not found: " + idEnrollment);
+    public void deleteEnrollment(Long id) {
+        if (!enrollmentRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Enrollment not found: " + id);
         }
-        enrollmentRepository.deleteById(idEnrollment);
+        enrollmentRepository.deleteById(id);
+    }
+
+    @Override
+    public List<Enrollment> getEnrollmentsByStudentId(Long studentId) {
+        return enrollmentRepository.findByStudentId(studentId);
+    }
+
+    @Override
+    public List<Enrollment> getEnrollmentsByCourseId(Long courseId) {
+        return enrollmentRepository.findByCourseId(courseId);
     }
 }

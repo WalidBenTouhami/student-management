@@ -1,34 +1,24 @@
 package tn.esprit.studentmanagement.mapper;
 
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 import tn.esprit.studentmanagement.dto.StudentDTO;
 import tn.esprit.studentmanagement.entities.Student;
 
-public class StudentMapper {
-    public static StudentDTO toDto(Student s) {
-        if (s == null) return null;
-        StudentDTO d = new StudentDTO();
-        d.setIdStudent(s.getIdStudent());
-        d.setFirstName(s.getFirstName());
-        d.setLastName(s.getLastName());
-        d.setEmail(s.getEmail());
-        d.setPhone(s.getPhone());
-        d.setDateOfBirth(s.getDateOfBirth());
-        d.setAddress(s.getAddress());
-        if (s.getDepartment() != null) d.setDepartmentId(s.getDepartment().getIdDepartment());
-        return d;
-    }
+@Mapper(componentModel = "spring")
+public interface StudentMapper {
 
-    public static Student toEntity(StudentDTO d) {
-        if (d == null) return null;
-        Student s = new Student();
-        s.setIdStudent(d.getIdStudent());
-        s.setFirstName(d.getFirstName());
-        s.setLastName(d.getLastName());
-        s.setEmail(d.getEmail());
-        s.setPhone(d.getPhone());
-        s.setDateOfBirth(d.getDateOfBirth());
-        s.setAddress(d.getAddress());
-        // department association handled by service/controller
-        return s;
-    }
+    // MapStruct va automatiquement mapper:
+    // idStudent <-> idStudent
+    // firstName, lastName, email, phone, dateOfBirth, address
+    // departmentId <-> department.id (si l'entité a une relation department)
+    StudentDTO toDto(Student entity);
+
+    Student toEntity(StudentDTO dto);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateEntity(StudentDTO dto, @MappingTarget Student entity);
 }

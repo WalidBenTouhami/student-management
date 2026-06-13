@@ -94,11 +94,28 @@ pipeline {
 
         stage('Clean environment and Deploy') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'mysql-root-credentials',
-                    usernameVariable: 'MYSQL_USER',
-                    passwordVariable: 'MYSQL_ROOT_PASSWORD'
-                )]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'mysql-root-credentials',
+                        usernameVariable: 'MYSQL_ROOT_USER',
+                        passwordVariable: 'MYSQL_ROOT_PASSWORD'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'mysql-app-credentials',
+                        usernameVariable: 'MYSQL_APP_USER',
+                        passwordVariable: 'MYSQL_APP_PASSWORD'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'actuator-credentials',
+                        usernameVariable: 'ACTUATOR_USER',
+                        passwordVariable: 'ACTUATOR_PASSWORD'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'api-credentials',
+                        usernameVariable: 'API_USER',
+                        passwordVariable: 'API_PASSWORD'
+                    )
+                ]) {
                     sh '''
                         docker network create app-network 2>/dev/null || true
 
@@ -107,41 +124,62 @@ pipeline {
                         docker stop ${DOCKER_IMAGE} 2>/dev/null || true
                         docker rm ${DOCKER_IMAGE} 2>/dev/null || true
 
+                        # Start MySQL with a dedicated application user (least privilege)
                         docker run -d --name mysql \
                             --network app-network \
                             -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
                             -e MYSQL_DATABASE=${MYSQL_DATABASE} \
+                            -e MYSQL_USER=${MYSQL_APP_USER} \
+                            -e MYSQL_PASSWORD=${MYSQL_APP_PASSWORD} \
                             --health-cmd="mysqladmin ping -h localhost -uroot -p${MYSQL_ROOT_PASSWORD}" \
                             --health-interval=5s \
                             --health-timeout=5s \
                             --health-retries=12 \
                             --restart unless-stopped \
+                            --memory=512m \
                             mysql:8.0
 
-                        echo "Waiting for MySQL..."
+                        echo "Waiting for MySQL to be healthy..."
                         for i in $(seq 1 30); do
-                            if [ "$(docker inspect --format='{{.State.Health.Status}}' mysql 2>/dev/null)" = "healthy" ]; then
-                                echo "MySQL is ready."
+                            STATUS=$(docker inspect --format='{{.State.Health.Status}}' mysql 2>/dev/null)
+                            if [ "$STATUS" = "healthy" ]; then
+                                echo "✅ MySQL is ready."
                                 break
                             fi
+                            echo "  MySQL status: ${STATUS:-starting} (attempt $i/30)"
                             sleep 2
                         done
 
+                        # Start application using the dedicated app user (not root)
                         docker run -d --name ${DOCKER_IMAGE} \
                             --network app-network \
                             -e SPRING_PROFILES_ACTIVE=prod \
-                            -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true \
-                            -e SPRING_DATASOURCE_USERNAME=${MYSQL_USER:-root} \
-                            -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
+                            -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC" \
+                            -e SPRING_DATASOURCE_USERNAME=${MYSQL_APP_USER} \
+                            -e SPRING_DATASOURCE_PASSWORD=${MYSQL_APP_PASSWORD} \
+                            -e ACTUATOR_USER=${ACTUATOR_USER} \
+                            -e ACTUATOR_PASSWORD=${ACTUATOR_PASSWORD} \
+                            -e API_USER=${API_USER} \
+                            -e API_PASSWORD=${API_PASSWORD} \
+                            -e API_SECURITY_ENABLED=true \
+                            -e CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS} \
                             -e SERVER_PORT=${APP_PORT} \
                             -p ${APP_PORT}:${APP_PORT} \
                             --restart unless-stopped \
+                            --memory=512m \
                             ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
 
-                        echo "Waiting for application..."
-                        sleep 15
-
-                        echo "✅ Student Management deployed on http://localhost:${APP_PORT}${APP_CONTEXT_PATH}"
+                        echo "Waiting for application to start..."
+                        for i in $(seq 1 30); do
+                            if curl -sf -u "${ACTUATOR_USER}:${ACTUATOR_PASSWORD}" \
+                                "http://localhost:${APP_PORT}${APP_CONTEXT_PATH}/actuator/health" \
+                                | grep -q '"status":"UP"'; then
+                                echo "✅ Student Management is UP on http://localhost:${APP_PORT}${APP_CONTEXT_PATH}"
+                                break
+                            fi
+                            echo "  Waiting... ($i/30)"
+                            sleep 2
+                        done
                     '''
                 }
             }

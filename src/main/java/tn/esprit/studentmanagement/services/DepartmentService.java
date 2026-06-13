@@ -1,34 +1,36 @@
 package tn.esprit.studentmanagement.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import tn.esprit.studentmanagement.entities.Department;
+import tn.esprit.studentmanagement.exception.ResourceNotFoundException;
 import tn.esprit.studentmanagement.repositories.DepartmentRepository;
 
 import java.util.List;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 
 @Service
-
+@RequiredArgsConstructor
 public class DepartmentService implements IDepartmentService {
-    @Autowired
-    DepartmentRepository departmentRepository;
+
+    private final DepartmentRepository departmentRepository;
 
     @Override
     public List<Department> getAllDepartments() {
-        return departmentRepository.findAll();
+        return departmentRepository.findAll(Sort.by("name"));
     }
 
     @Override
     public Page<Department> getAllDepartmentsPaginated(int page, int size) {
-        return departmentRepository.findAll(PageRequest.of(page, size));
+        return departmentRepository.findAll(PageRequest.of(page, size, Sort.by("name")));
     }
 
     @Override
     public Department getDepartmentById(Long idDepartment) {
         return departmentRepository.findById(idDepartment)
-                .orElseThrow(() -> new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Department not found: " + idDepartment));
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found: " + idDepartment));
     }
 
     @Override
@@ -39,7 +41,7 @@ public class DepartmentService implements IDepartmentService {
     @Override
     public void deleteDepartment(Long idDepartment) {
         if (!departmentRepository.existsById(idDepartment)) {
-            throw new tn.esprit.studentmanagement.exception.ResourceNotFoundException("Department not found: " + idDepartment);
+            throw new ResourceNotFoundException("Department not found: " + idDepartment);
         }
         departmentRepository.deleteById(idDepartment);
     }

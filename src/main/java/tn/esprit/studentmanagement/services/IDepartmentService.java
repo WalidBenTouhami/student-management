@@ -5,10 +5,13 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
+/**
+ * Service interface for Department business operations.
+ */
 public interface IDepartmentService {
-    public List<Department> getAllDepartments();
-    public Page<Department> getAllDepartmentsPaginated(int page, int size);
-    public Department getDepartmentById(Long idDepartment);
-    public Department saveDepartment(Department department);
-    public void deleteDepartment(Long idDepartment);
+    List<Department> getAllDepartments();
+    Page<Department> getAllDepartmentsPaginated(int page, int size);
+    Department getDepartmentById(Long idDepartment);
+    Department saveDepartment(Department department);
+    void deleteDepartment(Long idDepartment);
 }

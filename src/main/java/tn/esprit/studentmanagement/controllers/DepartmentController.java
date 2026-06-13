@@ -1,43 +1,61 @@
 package tn.esprit.studentmanagement.controllers;
 
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.studentmanagement.dto.DepartmentDTO;
 import tn.esprit.studentmanagement.entities.Department;
 import tn.esprit.studentmanagement.mapper.DepartmentMapper;
 import tn.esprit.studentmanagement.services.IDepartmentService;
 
-@RestController
-@RequestMapping("/departments")
-@AllArgsConstructor
-public class DepartmentController {
-    private IDepartmentService departmentService;
+import java.util.List;
 
-    @GetMapping
-    public org.springframework.data.domain.Page<DepartmentDTO> getAllDepartment(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
-        var pageData = departmentService.getAllDepartmentsPaginated(page, size);
-        var dtoList = pageData.getContent().stream().map(DepartmentMapper::toDto).toList();
-        return new org.springframework.data.domain.PageImpl<>(dtoList, pageData.getPageable(), pageData.getTotalElements());
+@RestController
+@RequestMapping("/api/departments")
+@RequiredArgsConstructor
+public class DepartmentController {
+
+    private final IDepartmentService departmentService;
+    private final DepartmentMapper departmentMapper;
+
+    @PostMapping
+    public ResponseEntity<DepartmentDTO> create(@Valid @RequestBody DepartmentDTO dto) {
+        Department entity = departmentMapper.toEntity(dto);
+        Department saved = departmentService.saveDepartment(entity);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(departmentMapper.toDto(saved));
     }
 
     @GetMapping("/{id}")
-    public DepartmentDTO getDepartment(@PathVariable Long id) { return DepartmentMapper.toDto(departmentService.getDepartmentById(id)); }
-
-    @PostMapping
-    public DepartmentDTO createDepartment(@Valid @RequestBody DepartmentDTO departmentDto) { 
-        Department d = DepartmentMapper.toEntity(departmentDto);
-        Department saved = departmentService.saveDepartment(d);
-        return DepartmentMapper.toDto(saved);
+    public ResponseEntity<DepartmentDTO> getById(@PathVariable Long id) {
+        Department department = departmentService.getDepartmentById(id);
+        return ResponseEntity.ok(departmentMapper.toDto(department));
     }
 
-    @PutMapping
-    public DepartmentDTO updateDepartment(@Valid @RequestBody DepartmentDTO departmentDto) {
-        Department d = DepartmentMapper.toEntity(departmentDto);
-        Department saved = departmentService.saveDepartment(d);
-        return DepartmentMapper.toDto(saved);
+    @PutMapping("/{id}")
+    public ResponseEntity<DepartmentDTO> update(@PathVariable Long id, @Valid @RequestBody DepartmentDTO dto) {
+        Department existing = departmentService.getDepartmentById(id);
+        // Correction: l'ordre des paramètres doit correspondre à la définition du
+        // mapper
+        departmentMapper.updateEntity(dto, existing); // (source, target)
+        Department updated = departmentService.saveDepartment(existing);
+        return ResponseEntity.ok(departmentMapper.toDto(updated));
     }
 
     @DeleteMapping("/{id}")
-    public void deleteDepartment(@PathVariable Long id) { departmentService.deleteDepartment(id); }
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        departmentService.deleteDepartment(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<DepartmentDTO>> getAll() {
+        List<DepartmentDTO> departments = departmentService.getAllDepartments().stream()
+                .map(departmentMapper::toDto)
+                .toList();
+        return ResponseEntity.ok(departments);
+    }
 }

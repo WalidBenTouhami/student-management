@@ -1,29 +1,24 @@
 package tn.esprit.studentmanagement.entities;
 
 import jakarta.persistence.*;
-import lombok.*;
-
+import lombok.Data;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@ToString
+@Table(name = "courses")
+@Data
 public class Course {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idCourse;
-    @jakarta.validation.constraints.NotBlank
+
     private String name;
-    @jakarta.validation.constraints.NotBlank
-    private String code;           // exemple : CS101
-    private int credit;            // nombre de crédits
+    private String code;
+    private Integer credit;
     private String description;
 
     @OneToMany(mappedBy = "course")
-    @ToString.Exclude
-    private List<Enrollment> enrollments;
-
+    private List<Enrollment> enrollments = new ArrayList<>();
 }

@@ -1,27 +1,24 @@
 package tn.esprit.studentmanagement.entities;
 
 import jakarta.persistence.*;
-import lombok.*;
-
+import lombok.Data;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@ToString
+@Table(name = "departments")
+@Data
 public class Department {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idDepartment;
-    @jakarta.validation.constraints.NotBlank
+
     private String name;
     private String location;
     private String phone;
-    private String head; // chef de département
+    private String head;
 
     @OneToMany(mappedBy = "department")
-    @ToString.Exclude
-    private List<Student> students;
+    private List<Student> students = new ArrayList<>();
 }
