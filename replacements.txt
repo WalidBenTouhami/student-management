@@ -1,0 +1,15 @@
+MYSQL_ROOT_PASSWORD=secret==>MYSQL_ROOT_PASSWORD=***
+SPRING_DATASOURCE_PASSWORD=secret==>SPRING_DATASOURCE_PASSWORD=***
+SPRING_DATASOURCE_PASSWORD=pass==>SPRING_DATASOURCE_PASSWORD=***
+-Dsonar.login=admin==>-Dsonar.login=***
+-Dsonar.password=sonar==>-Dsonar.password=***
+GF_SECURITY_ADMIN_PASSWORD=admin==>GF_SECURITY_ADMIN_PASSWORD=***
+MYSQL_ROOT_PASSWORD="s3cr3t-root"==>MYSQL_ROOT_PASSWORD="***"
+MYSQL_APP_PASSWORD="s3cr3t-app"==>MYSQL_APP_PASSWORD="***"
+ACTUATOR_PASSWORD="s3cr3t-actuator"==>ACTUATOR_PASSWORD="***"
+API_PASSWORD="s3cr3t-api"==>API_PASSWORD="***"
+MYSQL_ROOT_PASSWORD="root"==>MYSQL_ROOT_PASSWORD="***"
+MYSQL_ROOT_PASSWORD="s3cr3t-root-$(openssl rand -hex 8)"==>MYSQL_ROOT_PASSWORD="***-$(openssl rand -hex 8)"
+MYSQL_APP_PASSWORD="s3cr3t-app-$(openssl rand -hex 8)"==>MYSQL_APP_PASSWORD="***-$(openssl rand -hex 8)"
+ACTUATOR_PASSWORD="s3cr3t-act-$(openssl rand -hex 8)"==>ACTUATOR_PASSWORD="***-$(openssl rand -hex 8)"
+API_PASSWORD="s3cr3t-api-$(openssl rand -hex 8)"==>API_PASSWORD="***-$(openssl rand -hex 8)"
