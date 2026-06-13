@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "student-management.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "student-management.labels" . | nindent 4 }}
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  # RollingUpdate: zero-downtime deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "student-management.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "student-management.selectorLabels" . | nindent 8 }}
+      annotations:
+        # Force pod restart when ConfigMap or Secret changes
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        # Prometheus scraping annotations
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/student/actuator/prometheus"
+        prometheus.io/port: {{ .Values.app.port | quote }}
+    spec:
+      # Pod-level security context (Pod Security Standards: restricted)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      # Graceful shutdown: wait for in-flight requests
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          # Container-level security context
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false   # Spring Boot needs /tmp
+            capabilities:
+              drop:
+                - ALL
+          # Non-sensitive config from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: {{ include "student-management.configMapName" . }}
+          # Sensitive credentials from Secrets
+          env:
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "student-management.mysqlSecretName" . }}
+                  key: app-user
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "student-management.mysqlSecretName" . }}
+                  key: app-password
+            - name: ACTUATOR_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "student-management.appSecretName" . }}
+                  key: actuator-user
+            - name: ACTUATOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "student-management.appSecretName" . }}
+                  key: actuator-password
+            - name: API_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "student-management.appSecretName" . }}
+                  key: api-user
+            - name: API_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "student-management.appSecretName" . }}
+                  key: api-password
+          # Resource requests and limits
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          # Liveness probe — restart pod if app is unhealthy
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+          # Readiness probe — remove pod from load balancer if not ready
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+          # Startup probe — allow extra time for slow starts (migrations, etc.)
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 12
+            timeoutSeconds: 5
+          # Mount a writable /tmp for Spring Boot (distroless has no /tmp)
+          volumeMounts:
+            - name: tmp-dir
+              mountPath: /tmp
+      volumes:
+        - name: tmp-dir
+          emptyDir: {}
+      # Spread pods across nodes for availability (Minikube = single node, ignored)
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "student-management.selectorLabels" . | nindent 14 }}

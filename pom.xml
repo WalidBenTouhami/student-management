@@ -29,6 +29,11 @@
         <springdoc.version>2.2.0</springdoc.version>
         <lombok.version>1.18.38</lombok.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <!-- SonarQube Quality Gate -->
+        <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
+        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+        <sonar.exclusions>**/generated/**,**/db/migration/**,**/*MapperImpl.java</sonar.exclusions>
+        <sonar.coverage.exclusions>**/*Application.java,**/*Config*.java,**/*Configuration.java,**/*Exception*.java,**/*DTO*.java,**/*Request*.java,**/*Response*.java</sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -91,6 +96,12 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- Observability: Micrometer + Prometheus -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
         <!-- Testing -->
@@ -184,6 +195,34 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                    <!-- Enforce minimum coverage: fail build if < 70% -->
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.70</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <!-- Exclude generated code from coverage check -->
+                            <excludes>
+                                <exclude>**/generated/**</exclude>
+                                <exclude>**/*MapperImpl.class</exclude>
+                                <exclude>**/*Application.class</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
