@@ -1,94 +1,363 @@
-# 🎓 Student Management System
+# Student Management System — DevOps Stack
 
-Bienvenue dans le projet **Student Management** ! Il s'agit d'une application backend robuste construite avec Spring Boot, gérant des étudiants, des cours et des départements.
+> **Production-ready** Spring Boot 3 / Java 21 / MySQL 8 application with a complete CI/CD pipeline, Kubernetes deployment via Helm, security scanning, and observability.
 
-Ce projet est conçu avec une approche **DevOps complète**. Il inclut une configuration Docker avancée et un pipeline CI/CD automatisé sous Jenkins.
-
----
-
-## 🚀 1. Développement Local
-
-Si vous souhaitez faire tourner le projet sur votre propre machine pour le modifier ou le tester :
-
-### Prérequis
-- **Java 21** (ou supérieur)
-- **Docker** (pour la base de données locale)
-
-### Compiler le projet
-Nous utilisons Maven (via le wrapper `mvnw` fourni) pour compiler l'application. Cette étape va télécharger les dépendances et générer un fichier `.jar` exécutable :
-
-```bash
-# Sous Linux / Mac / WSL
-./mvnw clean package
-
-# Sous Windows (PowerShell/CMD)
-./mvnw.cmd clean package
-```
-> *Astuce : Ajoutez `-DskipTests` à la fin de la commande si vous souhaitez ignorer l'exécution des tests unitaires pour compiler plus vite.*
+[![Quality Gate Status](https://img.shields.io/badge/SonarQube-Quality%20Gate-brightgreen)](http://localhost:9000)
+[![Docker Image](https://img.shields.io/docker/v/walid369/student-management?label=Docker)](https://hub.docker.com/r/walid369/student-management)
 
 ---
 
-## 🐳 2. Architecture Docker
+## Architecture
 
-L'application est conteneurisée à l'aide d'un fichier `Dockerfile` utilisant la technique du **Multi-stage build**.
-1. **Stage de Build** : Utilise une image contenant Maven pour compiler le code de manière isolée.
-2. **Stage de Run** : Utilise une image "distroless" (ultra-légère et sécurisée, sans système d'exploitation complet) pour exécuter l'application.
+```mermaid
+graph TB
+    subgraph Developer["👨‍💻 Developer"]
+        CODE[Git Push / PR]
+    end
 
-### Lancer l'environnement complet (App + Base de données)
-Vous pouvez démarrer l'application ainsi qu'une base de données MySQL via Docker :
+    subgraph CI["🔧 Jenkins CI/CD"]
+        CHECKOUT[1. Checkout]
+        BUILD[2. Build & Test\n./mvnw clean verify]
+        SONAR[3. SonarQube Analysis\n+ Quality Gate]
+        DOCKER_BUILD[4. Docker Build\ntag: SHA + latest]
+        TRIVY[5. Trivy Scan\nCRITICAL = fail]
+        PUSH[6. Docker Hub Push]
+        DEPLOY[7. Helm Deploy\nMinikube]
+        SMOKE[8. Smoke Test\nHealth Check]
+        ROLLBACK[9. Auto-Rollback\non failure]
+    end
 
-```bash
-# 1. Créer un réseau privé pour que les conteneurs communiquent entre eux
-docker network create app-network
+    subgraph K8S["☸️ Minikube / Kubernetes (student-management ns)"]
+        direction LR
+        subgraph APP["Application Tier"]
+            POD1[Pod 1\nSpring Boot]
+            POD2[Pod 2\nSpring Boot]
+            HPA[HPA\n2-5 replicas]
+        end
+        subgraph DB["Database Tier"]
+            MYSQL[MySQL 8\nPod]
+            PVC[PersistentVolumeClaim\n1Gi]
+        end
+        subgraph NETWORK["Networking"]
+            SVC[NodePort Service\n:30089]
+            NETPOL[NetworkPolicy\nApp ↔ MySQL only]
+        end
+        subgraph CONFIG["Config & Secrets"]
+            CM[ConfigMap\nnon-sensitive]
+            SEC[Secrets\ncredentials]
+        end
+    end
 
-# 2. Démarrer MySQL
-docker run -d --name mysql --network app-network -e MYSQL_ROOT_PASSWORD=secret -e MYSQL_DATABASE=studentdb mysql:8.0
+    subgraph OBS["📊 Observability"]
+        PROM[Prometheus\n/actuator/prometheus]
+        LOKI[Logs\nJSON structured]
+    end
 
-# 3. Construire et Démarrer l'application
-docker build -t student-management:latest .
-docker run -d --name student-app --network app-network -p 8089:8089 -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql:3306/studentdb" -e SPRING_DATASOURCE_USERNAME=root -e SPRING_DATASOURCE_PASSWORD=secret student-management:latest
-```
-
----
-
-## ⚙️ 3. Intégration et Déploiement Continus (CI/CD)
-
-Le projet intègre un pipeline **Jenkins** entièrement automatisé, défini dans le fichier `Jenkinsfile`.
-
-### Les étapes du Pipeline (Stages) :
-1. **Checkout** : Jenkins récupère le code source le plus récent depuis GitHub suite à un évènement (Webhook).
-2. **Build and Test** : Exécution de Maven (`./mvnw clean package`) pour s'assurer que le code compile et que les tests passent.
-3. **Build Docker Image** : Création de l'image Docker de l'application à partir du `Dockerfile`.
-4. **Push to Registry** : L'image est poussée sur Docker Hub pour être disponible depuis n'importe quel serveur.
-5. **Clean & Deploy** : Jenkins arrête les anciens conteneurs sur le serveur, met à jour l'image, et redémarre la base de données et l'application sur le réseau Docker.
-
-> 🔒 **Sécurité :** Les mots de passe et identifiants (Docker Hub, MySQL) sont injectés via des variables d'environnement secrètes gérées par Jenkins. Ils n'apparaissent jamais en clair dans le code.
-
----
-
-## 📊 4. Surveillance Jenkins en Terminal (Bonus DevOps)
-
-Le projet inclut un script Bash fait maison pour surveiller l'état de vos pipelines Jenkins en direct, sans ouvrir de navigateur !
-
-### Installation
-Le script se trouve dans le dossier `scripts/`. Assurez-vous qu'il est exécutable :
-```bash
-chmod +x scripts/jenkins_jobs_monitor.sh
+    CODE --> CHECKOUT
+    CHECKOUT --> BUILD --> SONAR --> DOCKER_BUILD --> TRIVY --> PUSH --> DEPLOY
+    DEPLOY --> SMOKE
+    SMOKE -->|fail| ROLLBACK
+    SMOKE -->|pass| K8S
+    DEPLOY --> K8S
+    POD1 --> PROM
+    POD2 --> PROM
 ```
 
-### Utilisation (Mode Surveillance en temps réel)
-Lancez le script avec l'option `--watch` pour afficher un tableau de bord qui se met à jour automatiquement (par défaut toutes les 5 secondes, ici réglé sur 10) :
+---
 
-```bash
-./scripts/jenkins_jobs_monitor.sh \
-  --url=http://<votre-ip-jenkins>:8080 \
-  --user=admin \
-  --password=<votre-mot-de-passe-ou-token> \
-  --watch \
-  --refresh=10
-```
+## 📋 Prerequisites
 
-> 💡 **Astuce Vagrant :** Si vous lancez ce script depuis une machine virtuelle Vagrant (VirtualBox) pour observer un Jenkins installé sur votre Windows physique, remplacez l'IP par `10.0.2.2`.
+| Tool | Version | Purpose |
+|---|---|---|
+| Java (JDK) | 21 | Build & run |
+| Maven | 3.9+ | Build tool |
+| Docker | 24+ | Containerization |
+| kubectl | 1.28+ | K8s CLI |
+| Helm | 3.12+ | K8s package manager |
+| Minikube | 1.32+ | Local K8s cluster |
+| Trivy | 0.48+ | Security scanner |
+| Jenkins | 2.440+ | CI/CD |
+| SonarQube | 10.x | Code quality |
 
 ---
-*Ce projet est une démonstration complète d'une architecture backend moderne, de la conception logicielle au déploiement automatisé.*
+
+## 🚀 Quick Start (Local Dev)
+
+### 1. Clone & Build
+```bash
+git clone https://github.com/WalidBenTouhami/student-management.git
+cd student-management
+
+# Build Maven project
+make build
+
+# Run tests
+make test
+```
+
+### 2. Run with Docker Compose
+```bash
+# Copy and configure env file
+cp .env.example .env   # edit values
+
+# Start stack
+make docker-run
+
+# App: http://localhost:8089/student
+# Swagger: http://localhost:8089/student/swagger-ui.html
+```
+
+### 3. Build & Push Docker Image
+```bash
+# Build image (auto-tags with git SHA)
+make docker-build
+
+# Push to Docker Hub (requires docker login)
+docker login
+make docker-push
+```
+
+---
+
+## ☸️ Kubernetes Deployment (Minikube)
+
+### 1. Start Minikube
+```bash
+minikube start --cpus=4 --memory=4096 --driver=docker
+minikube addons enable metrics-server
+minikube addons enable ingress    # optional
+```
+
+### 2. Deploy via Helm
+```bash
+# Lint chart
+make helm-lint
+
+# Dry-run
+make helm-dry-run
+
+# Deploy (set your credentials)
+export MYSQL_ROOT_PASSWORD="s3cr3t-root"
+export MYSQL_APP_USER="student_user"
+export MYSQL_APP_PASSWORD="s3cr3t-app"
+export ACTUATOR_USER="actuator-admin"
+export ACTUATOR_PASSWORD="s3cr3t-actuator"
+export API_USER="api-user"
+export API_PASSWORD="s3cr3t-api"
+
+make k8s-deploy IMAGE_TAG=$(git rev-parse --short HEAD)
+```
+
+### 3. Access the Application
+```bash
+# Get Minikube IP
+export MINIKUBE_IP=$(minikube ip)
+
+# Application
+curl http://$MINIKUBE_IP:30089/student/actuator/health
+
+# Prometheus metrics
+curl http://$MINIKUBE_IP:30089/student/actuator/prometheus
+```
+
+### 4. Check Status
+```bash
+make k8s-status
+
+# Output:
+# ── Pods ──────────────────────────────────
+# NAME                                  READY   STATUS    RESTARTS   AGE
+# student-management-xxx-yyy            1/1     Running   0          2m
+# student-management-xxx-zzz            1/1     Running   0          2m
+# mysql-xxx-yyy                         1/1     Running   0          3m
+#
+# ── HPA ───────────────────────────────────
+# NAME                        REFERENCE                     TARGETS   MINPODS   MAXPODS
+# student-management-hpa      Deployment/student-management  5%/70%    2         5
+```
+
+---
+
+## 🔧 Jenkins Pipeline Setup
+
+### Required Jenkins Credentials
+
+Configure these in **Jenkins → Manage Jenkins → Credentials → System → Global**:
+
+| ID | Type | Description |
+|---|---|---|
+| `github-token` | Username/Password | GitHub PAT for checkout |
+| `docker-hub-credentials` | Username/Password | Docker Hub login |
+| `Sonar_token` | Secret text | SonarQube API token |
+| `kubeconfig-minikube` | Secret file | `~/.kube/config` from Minikube host |
+| `mysql-root-credentials` | Username/Password | MySQL root user |
+| `mysql-app-credentials` | Username/Password | MySQL app user |
+| `actuator-credentials` | Username/Password | Spring Actuator basic auth |
+| `api-credentials` | Username/Password | API basic auth |
+
+### Required Jenkins Plugins
+
+```
+git, pipeline, sonarqube-scanner, docker-pipeline, 
+jacoco, html-publisher, credentials-binding
+```
+
+### Pipeline Stages
+
+| Stage | Description | Fails on |
+|---|---|---|
+| Checkout | Git clone with credentials | Invalid repo/credentials |
+| Build & Test | `mvnw clean verify` + JaCoCo | Test failure / coverage < 70% |
+| SonarQube Analysis | `mvn sonar:sonar` | SonarQube unreachable |
+| Quality Gate | Wait for SonarQube result | Quality Gate status != OK |
+| Build Docker Image | Multi-stage build with OCI labels | Build error |
+| Trivy Scan | CVE scan, fail on CRITICAL | Any CRITICAL CVE |
+| Push to Docker Hub | Push :sha + :latest | Auth failure |
+| Deploy to Kubernetes | `helm upgrade --install --atomic` | Helm failure / timeout |
+| Smoke Test | Health check + pod count | App not healthy / rollback |
+
+---
+
+## 🔒 Security (DevSecOps)
+
+| Control | Implementation |
+|---|---|
+| **Zero hardcoded secrets** | All secrets via Jenkins Credentials → K8s Secrets |
+| **Distroless image** | `gcr.io/distroless/java21-debian12:nonroot` |
+| **Non-root container** | UID 65532, no privilege escalation |
+| **CVE scanning** | Trivy on every build (CRITICAL = pipeline fail) |
+| **Pod Security Standards** | `restricted` profile on namespace |
+| **NetworkPolicy** | MySQL accessible only from app pods |
+| **seccompProfile** | `RuntimeDefault` on all pods |
+| **Capabilities dropped** | `ALL` capabilities dropped |
+| **Dependency updates** | Dependabot (weekly Maven + Docker) |
+
+---
+
+## 📊 Observability
+
+### Prometheus Metrics
+- Endpoint: `GET /student/actuator/prometheus`
+- Micrometer tags: `application=student-management`
+- Annotations on pods for auto-discovery
+
+### Health Endpoints
+```bash
+# Liveness (K8s probe)
+GET /student/actuator/health/liveness
+
+# Readiness (K8s probe)  
+GET /student/actuator/health/readiness
+
+# Full health (requires actuator credentials)
+GET /student/actuator/health
+```
+
+### Structured JSON Logging
+```json
+{
+  "timestamp": "2025-01-01T12:00:00Z",
+  "level": "INFO",
+  "logger": "tn.esprit.studentmanagement.service.StudentService",
+  "message": "Student created",
+  "thread": "http-nio-8089-exec-1"
+}
+```
+
+---
+
+## 🛠️ Make Targets Reference
+
+```bash
+make help           # Show all available targets
+make build          # Maven build (skip tests)
+make test           # Run tests + JaCoCo coverage
+make sonar          # SonarQube analysis
+make deps-check     # Check outdated dependencies
+make docker-build   # Build Docker image
+make docker-push    # Push to Docker Hub
+make trivy-scan     # Security scan with Trivy
+make helm-lint      # Lint Helm chart
+make helm-dry-run   # Dry-run K8s deployment
+make k8s-deploy     # Deploy to Kubernetes
+make k8s-status     # Show K8s resource status
+make k8s-logs       # Follow app logs
+make k8s-rollback   # Rollback Helm release
+make health         # Check app health endpoint
+make clean          # Clean build + Docker
+```
+
+---
+
+## 📁 Project Structure
+
+```
+student-management/
+├── src/                              # Java source code
+│   ├── main/java/                    # Application code
+│   └── main/resources/
+│       ├── application.properties    # Base config
+│       ├── application-prod.properties
+│       └── application-k8s.properties  # K8s profile
+├── Dockerfile                        # Multi-stage, distroless
+├── Jenkinsfile                       # 9-stage CI/CD pipeline
+├── Makefile                          # Reproducible commands
+├── docker-compose.yml                # Local dev stack
+├── sonar-project.properties          # SonarQube config
+├── helm/student-management/          # Helm chart
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   ├── values-prod.yaml
+│   └── templates/
+│       ├── deployment.yaml
+│       ├── service.yaml
+│       ├── configmap.yaml
+│       ├── secret.yaml
+│       ├── hpa.yaml
+│       ├── networkpolicy.yaml
+│       ├── ingress.yaml
+│       ├── mysql-deployment.yaml
+│       ├── mysql-pvc.yaml
+│       └── NOTES.txt
+├── k8s/                              # Raw YAML manifests
+│   ├── namespace.yaml
+│   ├── configmap.yaml
+│   ├── app-deployment.yaml
+│   ├── app-service.yaml
+│   ├── mysql.yaml
+│   ├── hpa.yaml
+│   ├── networkpolicy.yaml
+│   └── monitoring/
+│       └── servicemonitor.yaml
+├── docs/                             # Technical documentation
+│   ├── architecture.md
+│   ├── jenkins-setup.md
+│   ├── kubernetes-setup.md
+│   └── security.md
+└── scripts/
+    └── jenkins_jobs_monitor.sh       # Jenkins + K8s monitor
+```
+
+---
+
+## 🔁 Rollback
+
+```bash
+# Via Make
+make k8s-rollback
+
+# Via Helm directly
+helm rollback student-management -n student-management --wait
+
+# View history
+helm history student-management -n student-management
+```
+
+---
+
+## 📚 Documentation
+
+- [Architecture Details](docs/architecture.md)
+- [Jenkins Setup Guide](docs/jenkins-setup.md)
+- [Kubernetes Setup Guide](docs/kubernetes-setup.md)
+- [Security Decisions](docs/security.md)
