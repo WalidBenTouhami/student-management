@@ -1,20 +1,18 @@
 package tn.esprit.studentmanagement.mapper;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import tn.esprit.studentmanagement.dto.DepartmentDTO;
 import tn.esprit.studentmanagement.entities.Department;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
+/**
+ * Pure unit test — no Spring context needed.
+ * Instantiates the MapStruct-generated impl directly.
+ */
 class DepartmentMapperTest {
 
-    @Autowired
-    private DepartmentMapper mapper;
+    private final DepartmentMapper mapper = new DepartmentMapperImpl();
 
     @Test
     void null_inputs_returnNull() {
@@ -43,5 +41,6 @@ class DepartmentMapperTest {
         assertNotNull(d2);
         assertEquals(5L, d2.getIdDepartment());
         assertEquals("Computer Science", d2.getName());
+        assertEquals("Building A", d2.getLocation());
     }
 }

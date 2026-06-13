@@ -1,21 +1,18 @@
 package tn.esprit.studentmanagement.mapper;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import tn.esprit.studentmanagement.dto.CourseDTO;
 import tn.esprit.studentmanagement.entities.Course;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
+/**
+ * Pure unit test — no Spring context needed.
+ * Instantiates the MapStruct-generated impl directly.
+ */
 class CourseMapperTest {
 
-    @Autowired
-    private CourseMapper mapper;
+    private final CourseMapper mapper = new CourseMapperImpl();
 
     @Test
     void toDto_null_returnsNull() {
@@ -28,7 +25,7 @@ class CourseMapperTest {
     }
 
     @Test
-    void toDto_and_toEntity_mapsFields() {
+    void toDto_mapsAllFields() {
         Course c = new Course();
         c.setIdCourse(10L);
         c.setName("Algebra");
@@ -43,13 +40,23 @@ class CourseMapperTest {
         assertEquals("MATH101", dto.getCode());
         assertEquals(3, dto.getCredit());
         assertEquals("Basic algebra", dto.getDescription());
+    }
 
-        Course c2 = mapper.toEntity(dto);
-        assertNotNull(c2);
-        assertEquals(10L, c2.getIdCourse());
-        assertEquals("Algebra", c2.getName());
-        assertEquals("MATH101", c2.getCode());
-        assertEquals(3, c2.getCredit());
-        assertEquals("Basic algebra", c2.getDescription());
+    @Test
+    void toEntity_mapsAllFields() {
+        CourseDTO dto = new CourseDTO();
+        dto.setIdCourse(10L);
+        dto.setName("Algebra");
+        dto.setCode("MATH101");
+        dto.setCredit(3);
+        dto.setDescription("Basic algebra");
+
+        Course c = mapper.toEntity(dto);
+        assertNotNull(c);
+        assertEquals(10L, c.getIdCourse());
+        assertEquals("Algebra", c.getName());
+        assertEquals("MATH101", c.getCode());
+        assertEquals(3, c.getCredit());
+        assertEquals("Basic algebra", c.getDescription());
     }
 }
