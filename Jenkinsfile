@@ -96,7 +96,7 @@ pipeline {
                         classPattern: 'target/classes',
                         sourcePattern: 'src/main/java',
                         exclusionPattern: '**/generated/**,**/*MapperImpl.class',
-                        minimumInstructionCoverage: '70',
+                        minimumInstructionCoverage: '80',
                         changeBuildStatus: true
                     )
                 }
