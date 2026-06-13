@@ -34,6 +34,22 @@ public class StudentService implements IStudentService {
 
     @Override
     public Student saveStudent(Student student) {
+        // 1. Enforce minimum age (18 years)
+        if (student.getDateOfBirth() != null) {
+            if (student.getDateOfBirth().isAfter(java.time.LocalDate.now().minusYears(18))) {
+                throw new IllegalArgumentException("Student must be at least 18 years old.");
+            }
+        }
+
+        // 2. Enforce email uniqueness
+        if (student.getEmail() != null) {
+            java.util.Optional<Student> existing = studentRepository.findByEmail(student.getEmail());
+            if (existing.isPresent()) {
+                if (student.getIdStudent() == null || !existing.get().getIdStudent().equals(student.getIdStudent())) {
+                    throw new IllegalArgumentException("Email is already in use: " + student.getEmail());
+                }
+            }
+        }
         return studentRepository.save(student);
     }
 
@@ -48,5 +64,13 @@ public class StudentService implements IStudentService {
     @Override
     public List<Student> getStudentsByDepartment(Long departmentId) {
         return studentRepository.findByDepartment_IdDepartment(departmentId);
+    }
+
+    @Override
+    public Page<Student> searchStudents(String name, String email, String departmentName, Long departmentId, int page, int size) {
+        return studentRepository.findAll(
+                tn.esprit.studentmanagement.repositories.StudentSpecification.search(name, email, departmentName, departmentId),
+                PageRequest.of(page, size)
+        );
     }
 }

@@ -15,5 +15,6 @@ public interface IStudentService {
     Student saveStudent(Student student);
     void deleteStudent(Long id);
     List<Student> getStudentsByDepartment(Long departmentId);
+    Page<Student> searchStudents(String name, String email, String departmentName, Long departmentId, int page, int size);
 }
 

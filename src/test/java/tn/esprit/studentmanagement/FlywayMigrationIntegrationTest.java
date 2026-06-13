@@ -50,7 +50,7 @@ class FlywayMigrationIntegrationTest {
     void flywayCreatesExpectedTables() {
         List<String> tables = jdbcTemplate.queryForList("SHOW TABLES", String.class);
         assertThat(tables).containsExactlyInAnyOrder(
-                "department", "student", "course", "enrollment", "flyway_schema_history");
+                "departments", "students", "courses", "enrollments", "flyway_schema_history");
     }
 
     @Test

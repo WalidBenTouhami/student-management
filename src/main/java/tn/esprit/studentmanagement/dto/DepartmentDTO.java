@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 @Data
 public class DepartmentDTO {
     private Long idDepartment;
-    @NotBlank
+    @NotBlank(message = "Department name is required")
     private String name;
     private String location;
     private String phone;

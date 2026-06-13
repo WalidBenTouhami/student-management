@@ -57,6 +57,19 @@ public class StudentController {
         return ResponseEntity.ok(students);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<org.springframework.data.domain.Page<StudentDTO>> search(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String departmentName,
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        org.springframework.data.domain.Page<StudentDTO> result = studentService.searchStudents(name, email, departmentName, departmentId, page, size)
+                .map(studentMapper::toDto);
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping("/department/{departmentId}")
     public ResponseEntity<List<StudentDTO>> getByDepartment(@PathVariable Long departmentId) {
         List<StudentDTO> students = studentService.getStudentsByDepartment(departmentId).stream()

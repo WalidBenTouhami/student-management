@@ -1,0 +1,14 @@
+{{- if .Values.pdb.enabled -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "student-management.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "student-management.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "student-management.selectorLabels" . | nindent 6 }}
+{{- end }}

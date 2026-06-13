@@ -207,7 +207,7 @@ jacoco, html-publisher, credentials-binding
 | Stage | Description | Fails on |
 |---|---|---|
 | Checkout | Git clone with credentials | Invalid repo/credentials |
-| Build & Test | `mvnw clean verify` + JaCoCo | Test failure / coverage < 70% |
+| Build & Test | `mvnw clean verify` + JaCoCo | Test failure / coverage < 80% |
 | SonarQube Analysis | `mvn sonar:sonar` | SonarQube unreachable |
 | Quality Gate | Wait for SonarQube result | Quality Gate status != OK |
 | Build Docker Image | Multi-stage build with OCI labels | Build error |
@@ -355,9 +355,27 @@ helm history student-management -n student-management
 
 ---
 
+## 📈 Audit & New Features (DevOps Master-grade)
+
+- **Student Filtering & Search**: `GET /student/api/students/search` with parameters `name`, `email`, `departmentName`, `departmentId`, `page`, `size` (paginated and filtered dynamic lookup).
+- **Course Assignment**: `PUT /student/api/courses/{id}/assign/{departmentId}` to link a course to a department.
+- **Analytics Dashboard**:
+  - `GET /student/api/stats/dashboard`: Exposes total count of students, courses, departments, enrollments, average grade, status distributions, and enrollment metrics.
+  - `GET /student/api/stats/report`: Dynamic tabular report grouping active/total enrollments and average grade by department name and course code.
+- **PodDisruptionBudget (PDB)**: Added template `helm/student-management/templates/pdb.yaml` to prevent cluster disruption during node operations by ensuring at least 1 replica is active.
+- **Harden Validation & Business Rules**:
+  - Validates student age to be at least 18 years on register/update.
+  - Verifies unique email constraint before database persist.
+  - Enforces course capacity checks during student enrollment (status ACTIVE).
+  - Protects against duplicate ACTIVE student enrollment in the same course.
+- **Code Quality**: Enforced minimum JaCoCo instruction coverage of **80%** in the Maven build.
+
+---
+
 ## 📚 Documentation
 
 - [Architecture Details](docs/architecture.md)
 - [Jenkins Setup Guide](docs/jenkins-setup.md)
 - [Kubernetes Setup Guide](docs/kubernetes-setup.md)
 - [Security Decisions](docs/security.md)
+

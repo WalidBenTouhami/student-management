@@ -10,4 +10,5 @@ public interface ICourseService {
     Course getCourseById(Long id);
     Course saveCourse(Course course);
     void deleteCourse(Long id);
+    Course assignDepartment(Long id, Long departmentId);
 }
