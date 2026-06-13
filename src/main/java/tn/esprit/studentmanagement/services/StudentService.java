@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 
 @Service
 @RequiredArgsConstructor
+@SuppressWarnings("null")
 public class StudentService implements IStudentService {
 
     private final StudentRepository studentRepository;

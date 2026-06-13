@@ -1,0 +1,34 @@
+{
+  "properties": [
+    {
+      "name": "actuator.username",
+      "type": "java.lang.String",
+      "description": "Username for accessing secure actuator endpoints."
+    },
+    {
+      "name": "actuator.password",
+      "type": "java.lang.String",
+      "description": "Password for accessing secure actuator endpoints."
+    },
+    {
+      "name": "api.username",
+      "type": "java.lang.String",
+      "description": "Username for accessing API endpoints."
+    },
+    {
+      "name": "api.password",
+      "type": "java.lang.String",
+      "description": "Password for accessing API endpoints."
+    },
+    {
+      "name": "api.security.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Flag to enable/disable security on API endpoints."
+    },
+    {
+      "name": "cors.allowed.origins",
+      "type": "java.lang.String",
+      "description": "Comma-separated list of allowed CORS origins."
+    }
+  ]
+}

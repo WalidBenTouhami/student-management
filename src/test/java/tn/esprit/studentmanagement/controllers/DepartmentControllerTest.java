@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -12,8 +12,6 @@ import tn.esprit.studentmanagement.dto.DepartmentDTO;
 import tn.esprit.studentmanagement.entities.Department;
 import tn.esprit.studentmanagement.mapper.DepartmentMapper;
 import tn.esprit.studentmanagement.services.IDepartmentService;
-
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -23,15 +21,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(DepartmentController.class)
 @WithMockUser(roles = "API")
+@SuppressWarnings("null")
 class DepartmentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private IDepartmentService departmentService;
 
-    @MockBean
+    @MockitoBean
     private DepartmentMapper departmentMapper;
 
     private Department department;

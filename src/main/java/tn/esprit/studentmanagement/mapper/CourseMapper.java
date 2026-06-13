@@ -8,7 +8,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 import tn.esprit.studentmanagement.dto.CourseDTO;
 import tn.esprit.studentmanagement.entities.Course;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = org.mapstruct.ReportingPolicy.IGNORE)
 public interface CourseMapper {
 
     @Mapping(source = "department.idDepartment", target = "departmentId")
