@@ -62,7 +62,7 @@ Vagrant.configure("2") do |config|
     echo "🏗️ Installation de Jenkins..."
     if ! command -v jenkins &> /dev/null; then
       sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
-        https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
       echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
         https://pkg.jenkins.io/debian-stable binary/" | sudo tee \
         /etc/apt/sources.list.d/jenkins.list > /dev/null
@@ -133,8 +133,13 @@ Vagrant.configure("2") do |config|
     # Redémarrage de Jenkins pour valider ses nouveaux groupes (docker, vagrant)
     sudo systemctl restart jenkins
 
+    echo "🚀 Copie des fichiers du projet pour éviter le bug VirtualBox (protocol error)..."
+    rm -rf /home/vagrant/app-build
+    cp -r /home/vagrant/student-management /home/vagrant/app-build
+    chown -R vagrant:vagrant /home/vagrant/app-build
+
     echo "🚀 Démarrage de l'application Student Management via Docker Compose..."
-    cd /home/vagrant/student-management
+    cd /home/vagrant/app-build
     if command -v docker-compose &> /dev/null; then
       sudo -u vagrant docker-compose up -d --build
     else

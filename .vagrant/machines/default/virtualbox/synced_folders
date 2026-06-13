@@ -1,0 +1,1 @@
+{"virtualbox":{"/home/vagrant/student-management":{"guestpath":"/home/vagrant/student-management","hostpath":"D:/Projects/student-management","disabled":false,"__vagrantfile":true},"/vagrant":{"guestpath":"/vagrant","hostpath":"D:/Projects/student-management","disabled":false,"__vagrantfile":true}}}
