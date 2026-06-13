@@ -67,6 +67,10 @@ class StudentManagementE2ETest {
         ResponseEntity<CourseDTO> response = restTemplate.postForEntity(
             "/api/courses", course, CourseDTO.class);
 
+        if (response.getStatusCode() != HttpStatus.CREATED) {
+            System.err.println("Response body: " + restTemplate.postForEntity("/api/courses", course, String.class).getBody());
+        }
+
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody().getIdCourse()).isNotNull();
         courseId = response.getBody().getIdCourse();
@@ -79,6 +83,7 @@ class StudentManagementE2ETest {
         enrollment.setStudentId(studentId);
         enrollment.setCourseId(courseId);
         enrollment.setStatus("ACTIVE");
+        enrollment.setEnrollmentDate(java.time.LocalDate.now());
 
         ResponseEntity<EnrollmentDTO> response = restTemplate.postForEntity(
             "/api/enrollments", enrollment, EnrollmentDTO.class);
