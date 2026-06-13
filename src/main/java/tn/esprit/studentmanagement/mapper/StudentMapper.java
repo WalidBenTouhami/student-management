@@ -15,8 +15,10 @@ public interface StudentMapper {
     // idStudent <-> idStudent
     // firstName, lastName, email, phone, dateOfBirth, address
     // departmentId <-> department.id (si l'entité a une relation department)
+    @Mapping(source = "department.idDepartment", target = "departmentId")
     StudentDTO toDto(Student entity);
 
+    @Mapping(source = "departmentId", target = "department.idDepartment")
     Student toEntity(StudentDTO dto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
