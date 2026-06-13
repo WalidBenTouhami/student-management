@@ -84,30 +84,45 @@ graph TB
 ## 🚀 Quick Start (Local Dev)
 
 ### 1. Clone & Build
+**Unix/Linux (using Makefile):**
 ```bash
 git clone https://github.com/WalidBenTouhami/student-management.git
 cd student-management
 
-# Build Maven project
+# Build & Run tests
 make build
-
-# Run tests
 make test
 ```
 
-### 2. Run with Docker Compose
-```bash
-# Copy and configure env file
-cp .env.example .env   # edit values
+**Windows / Standard CLI:**
+```powershell
+git clone https://github.com/WalidBenTouhami/student-management.git
+cd student-management
 
-# Start stack
-make docker-run
+# Build Maven project
+.\mvnw.cmd clean package -DskipTests
 
-# App: http://localhost:8089/student
-# Swagger: http://localhost:8089/student/swagger-ui.html
+# Run tests & verify coverage
+.\mvnw.cmd clean verify
 ```
 
+### 2. Run with Docker Compose
+**Unix/Linux:**
+```bash
+cp .env.example .env   # edit values
+make docker-run
+```
+
+**Windows / Standard CLI:**
+```powershell
+copy .env.example .env   # edit values
+docker compose up -d
+```
+* **App URL**: http://localhost:8089/student
+* **Swagger Documentation**: http://localhost:8089/student/swagger-ui.html
+
 ### 3. Build & Push Docker Image
+**Unix/Linux:**
 ```bash
 # Build image (auto-tags with git SHA)
 make docker-build
@@ -115,6 +130,16 @@ make docker-build
 # Push to Docker Hub (requires docker login)
 docker login
 make docker-push
+```
+
+**Windows / Standard CLI:**
+```powershell
+# Build image
+docker build -t walid369/student-management:latest .
+
+# Push to Docker Hub
+docker login
+docker push walid369/student-management:latest
 ```
 
 ---
@@ -129,14 +154,13 @@ minikube addons enable ingress    # optional
 ```
 
 ### 2. Deploy via Helm
+**Unix/Linux:**
 ```bash
-# Lint chart
+# Lint & dry-run
 make helm-lint
-
-# Dry-run
 make helm-dry-run
 
-# Deploy (set your credentials)
+# Set your credentials
 export MYSQL_ROOT_PASSWORD="s3cr3t-root"
 export MYSQL_APP_USER="student_user"
 export MYSQL_APP_PASSWORD="s3cr3t-app"
@@ -145,7 +169,41 @@ export ACTUATOR_PASSWORD="s3cr3t-actuator"
 export API_USER="api-user"
 export API_PASSWORD="s3cr3t-api"
 
+# Deploy
 make k8s-deploy IMAGE_TAG=$(git rev-parse --short HEAD)
+```
+
+**Windows / Standard CLI:**
+```powershell
+# Lint chart
+helm lint ./helm/student-management
+
+# Dry-run
+helm install student-management ./helm/student-management --dry-run --debug
+
+# Set your credentials (PowerShell environment variables)
+$env:MYSQL_ROOT_PASSWORD="s3cr3t-root"
+$env:MYSQL_APP_USER="student_user"
+$env:MYSQL_APP_PASSWORD="s3cr3t-app"
+$env:ACTUATOR_USER="actuator-admin"
+$env:ACTUATOR_PASSWORD="s3cr3t-actuator"
+$env:API_USER="api-user"
+$env:API_PASSWORD="s3cr3t-api"
+
+# Deploy via Helm upgrade
+helm upgrade --install student-management ./helm/student-management `
+  --namespace student-management `
+  --create-namespace `
+  --set image.tag="latest" `
+  --set mysqlSecret.rootPassword="$env:MYSQL_ROOT_PASSWORD" `
+  --set mysqlSecret.appUser="$env:MYSQL_APP_USER" `
+  --set mysqlSecret.appPassword="$env:MYSQL_APP_PASSWORD" `
+  --set appSecret.actuatorUser="$env:ACTUATOR_USER" `
+  --set appSecret.actuatorPassword="$env:ACTUATOR_PASSWORD" `
+  --set appSecret.apiUser="$env:API_USER" `
+  --set appSecret.apiPassword="$env:API_PASSWORD" `
+  --atomic `
+  --timeout 5m
 ```
 
 ### 3. Access the Application
@@ -161,19 +219,14 @@ curl http://$MINIKUBE_IP:30089/student/actuator/prometheus
 ```
 
 ### 4. Check Status
+**Unix/Linux:**
 ```bash
 make k8s-status
+```
 
-# Output:
-# ── Pods ──────────────────────────────────
-# NAME                                  READY   STATUS    RESTARTS   AGE
-# student-management-xxx-yyy            1/1     Running   0          2m
-# student-management-xxx-zzz            1/1     Running   0          2m
-# mysql-xxx-yyy                         1/1     Running   0          3m
-#
-# ── HPA ───────────────────────────────────
-# NAME                        REFERENCE                     TARGETS   MINPODS   MAXPODS
-# student-management-hpa      Deployment/student-management  5%/70%    2         5
+**Windows / Cross-platform CLI:**
+```powershell
+kubectl get pods,hpa,pdb,svc,netpol -n student-management
 ```
 
 ---
@@ -316,6 +369,7 @@ student-management/
 │       ├── hpa.yaml
 │       ├── networkpolicy.yaml
 │       ├── ingress.yaml
+│       ├── pdb.yaml                  # PodDisruptionBudget for High Availability
 │       ├── mysql-deployment.yaml
 │       ├── mysql-pvc.yaml
 │       └── NOTES.txt
@@ -342,14 +396,17 @@ student-management/
 
 ## 🔁 Rollback
 
+**Unix/Linux:**
 ```bash
-# Via Make
 make k8s-rollback
+```
 
-# Via Helm directly
+**Cross-platform / Helm directly:**
+```bash
+# Rollback to the previous version
 helm rollback student-management -n student-management --wait
 
-# View history
+# View revision history
 helm history student-management -n student-management
 ```
 
