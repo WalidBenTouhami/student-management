@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import tn.esprit.studentmanagement.entities.Student;
 import tn.esprit.studentmanagement.exception.ResourceNotFoundException;
 import tn.esprit.studentmanagement.repositories.StudentRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -13,21 +14,25 @@ import org.springframework.data.domain.PageRequest;
 @Service
 @RequiredArgsConstructor
 @SuppressWarnings("null")
+@Transactional
 public class StudentService implements IStudentService {
 
     private final StudentRepository studentRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Student> getAllStudents() {
         return studentRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Student> getAllStudentsPaginated(int page, int size) {
         return studentRepository.findAll(PageRequest.of(page, size));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Student getStudentById(Long id) {
         return studentRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Student not found: " + id));
@@ -63,11 +68,13 @@ public class StudentService implements IStudentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Student> getStudentsByDepartment(Long departmentId) {
         return studentRepository.findByDepartment_IdDepartment(departmentId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Student> searchStudents(String name, String email, String departmentName, Long departmentId, int page, int size) {
         return studentRepository.findAll(
                 tn.esprit.studentmanagement.repositories.StudentSpecification.search(name, email, departmentName, departmentId),
