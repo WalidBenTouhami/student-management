@@ -7,7 +7,6 @@ import org.springframework.test.context.ActiveProfiles;
 import tn.esprit.studentmanagement.dto.EnrollmentDTO;
 import tn.esprit.studentmanagement.entities.Course;
 import tn.esprit.studentmanagement.entities.Enrollment;
-import tn.esprit.studentmanagement.entities.Status;
 import tn.esprit.studentmanagement.entities.Student;
 
 import java.time.LocalDate;
@@ -37,7 +36,7 @@ class EnrollmentMapperTest {
         e.setIdEnrollment(7L);
         e.setEnrollmentDate(LocalDate.of(2021, 9, 1));
         e.setGrade(15.5);
-        e.setStatus(Status.ACTIVE);
+        e.setStatus("ACTIVE");   // entity.status is String
         Student s = new Student();
         s.setIdStudent(2L);
         Course c = new Course();
@@ -56,7 +55,7 @@ class EnrollmentMapperTest {
     }
 
     @Test
-    void toEntity_parsesStatus_ignoreInvalid() {
+    void toEntity_validStatus_preserved() {
         EnrollmentDTO dto = new EnrollmentDTO();
         dto.setIdEnrollment(8L);
         dto.setEnrollmentDate(LocalDate.of(2022, 1, 1));
@@ -66,13 +65,20 @@ class EnrollmentMapperTest {
         Enrollment e = mapper.toEntity(dto);
         assertNotNull(e);
         assertEquals(8L, e.getIdEnrollment());
-        assertEquals(Status.ACTIVE, e.getStatus());
+        assertEquals("ACTIVE", e.getStatus());
+    }
 
-        // invalid status should not throw
+    @Test
+    void toEntity_invalidStatus_returnsNull() {
+        EnrollmentDTO dto = new EnrollmentDTO();
+        dto.setIdEnrollment(9L);
+        dto.setEnrollmentDate(LocalDate.of(2022, 1, 1));
+        dto.setGrade(10.0);
         dto.setStatus("NOT_A_STATUS");
-        Enrollment e2 = mapper.toEntity(dto);
-        assertNotNull(e2);
-        // when invalid, status remains null
-        assertNull(e2.getStatus());
+
+        Enrollment e = mapper.toEntity(dto);
+        assertNotNull(e);
+        // invalid status is normalized to null
+        assertNull(e.getStatus());
     }
 }
