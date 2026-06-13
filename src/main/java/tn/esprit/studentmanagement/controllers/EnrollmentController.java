@@ -11,6 +11,7 @@ import tn.esprit.studentmanagement.mapper.EnrollmentMapper;
 import tn.esprit.studentmanagement.services.IEnrollmentService;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/api/enrollments")
@@ -50,10 +51,11 @@ public class EnrollmentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<EnrollmentDTO>> getAll() {
-        List<EnrollmentDTO> enrollments = enrollmentService.getAllEnrollments().stream()
-                .map(enrollmentMapper::toDto)
-                .toList();
+    public ResponseEntity<Page<EnrollmentDTO>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<EnrollmentDTO> enrollments = enrollmentService.getAllEnrollmentsPaginated(page, size)
+                .map(enrollmentMapper::toDto);
         return ResponseEntity.ok(enrollments);
     }
 

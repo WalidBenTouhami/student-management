@@ -11,6 +11,7 @@ import tn.esprit.studentmanagement.mapper.CourseMapper;
 import tn.esprit.studentmanagement.services.ICourseService;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/api/courses")
@@ -50,10 +51,11 @@ public class CourseController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CourseDTO>> getAll() {
-        List<CourseDTO> courses = courseService.getAllCourses().stream()
-                .map(courseMapper::toDto)
-                .toList();
+    public ResponseEntity<Page<CourseDTO>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<CourseDTO> courses = courseService.getAllCoursesPaginated(page, size)
+                .map(courseMapper::toDto);
         return ResponseEntity.ok(courses);
     }
 

@@ -11,6 +11,7 @@ import tn.esprit.studentmanagement.mapper.DepartmentMapper;
 import tn.esprit.studentmanagement.services.IDepartmentService;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping("/api/departments")
@@ -52,10 +53,11 @@ public class DepartmentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<DepartmentDTO>> getAll() {
-        List<DepartmentDTO> departments = departmentService.getAllDepartments().stream()
-                .map(departmentMapper::toDto)
-                .toList();
+    public ResponseEntity<Page<DepartmentDTO>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<DepartmentDTO> departments = departmentService.getAllDepartmentsPaginated(page, size)
+                .map(departmentMapper::toDto);
         return ResponseEntity.ok(departments);
     }
 }
