@@ -28,7 +28,7 @@
         <sonar-maven-plugin.version>4.0.0.4121</sonar-maven-plugin.version>
         <springdoc.version>2.2.0</springdoc.version>
         <lombok.version>1.18.38</lombok.version>
-        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
         <!-- SonarQube Quality Gate -->
         <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
