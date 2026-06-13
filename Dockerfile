@@ -1,8 +1,8 @@
-FROM eclipse-temurin:21-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /app
 COPY . .
 RUN ./mvnw clean package -DskipTests
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # Run as non-root user for security (Pod Security Standards)

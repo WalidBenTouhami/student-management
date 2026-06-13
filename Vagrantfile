@@ -133,8 +133,17 @@ Vagrant.configure("2") do |config|
     # Redémarrage de Jenkins pour valider ses nouveaux groupes (docker, vagrant)
     sudo systemctl restart jenkins
 
+    echo "🚀 Démarrage de l'application Student Management via Docker Compose..."
+    cd /home/vagrant/student-management
+    if command -v docker-compose &> /dev/null; then
+      sudo -u vagrant docker-compose up -d --build
+    else
+      sudo -u vagrant docker compose up -d --build
+    fi
+
     echo "🎉 Provisioning terminé !"
     echo "🔗 Accès Jenkins : http://localhost:9090 (ou http://192.168.56.10:8080)"
     echo "🔗 Accès SonarQube : http://localhost:9000 (ou http://192.168.56.10:9000)"
+    echo "🔗 Accès Application : http://localhost:8089/student/swagger-ui.html"
   SHELL
 end

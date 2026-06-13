@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: student-management-api
+  labels:
+    app: student-management-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: student-management-api
+  template:
+    metadata:
+      labels:
+        app: student-management-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/student/actuator/prometheus"
+        prometheus.io/port: "8089"
+    spec:
+      containers:
+      - name: student-management-api
+        image: student-management:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8089
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: student-config
+              key: db_url
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: student-secret
+              key: db_username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: student-secret
+              key: db_password
+        livenessProbe:
+          httpGet:
+            path: /student/actuator/health/liveness
+            port: 8089
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /student/actuator/health/readiness
+            port: 8089
+          initialDelaySeconds: 15
+          periodSeconds: 5

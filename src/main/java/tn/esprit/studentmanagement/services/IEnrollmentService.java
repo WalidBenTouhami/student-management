@@ -3,10 +3,13 @@ package tn.esprit.studentmanagement.services;
 import tn.esprit.studentmanagement.entities.Enrollment;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
 
 public interface IEnrollmentService {
 
     List<Enrollment> getAllEnrollments();
+    
+    Page<Enrollment> getAllEnrollmentsPaginated(int page, int size);
 
     Enrollment getEnrollmentById(Long id);
 

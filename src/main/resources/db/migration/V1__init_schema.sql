@@ -33,8 +33,9 @@ CREATE TABLE courses (
     id_course   BIGINT       NOT NULL AUTO_INCREMENT,
     name        VARCHAR(200) NOT NULL,
     code        VARCHAR(20)  NOT NULL,
-    credit      INT          NOT NULL DEFAULT 0,
-    description VARCHAR(500),
+    credit        INT          NOT NULL DEFAULT 0,
+    description   VARCHAR(500),
+    department_id BIGINT,
     PRIMARY KEY (id_course)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

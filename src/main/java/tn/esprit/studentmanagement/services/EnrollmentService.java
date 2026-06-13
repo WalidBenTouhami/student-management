@@ -2,15 +2,19 @@ package tn.esprit.studentmanagement.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.studentmanagement.entities.Enrollment;
 import tn.esprit.studentmanagement.exception.ResourceNotFoundException;
 import tn.esprit.studentmanagement.repositories.EnrollmentRepository;
 
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 @Service
 @RequiredArgsConstructor
 @SuppressWarnings("null")
+@Transactional
 public class EnrollmentService implements IEnrollmentService {
 
     private final EnrollmentRepository enrollmentRepository;
@@ -18,11 +22,19 @@ public class EnrollmentService implements IEnrollmentService {
     private final tn.esprit.studentmanagement.repositories.CourseRepository courseRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Enrollment> getAllEnrollments() {
         return enrollmentRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<Enrollment> getAllEnrollmentsPaginated(int page, int size) {
+        return enrollmentRepository.findAll(PageRequest.of(page, size));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Enrollment getEnrollmentById(Long id) {
         return enrollmentRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found: " + id));
@@ -95,11 +107,13 @@ public class EnrollmentService implements IEnrollmentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Enrollment> getEnrollmentsByStudentId(Long studentId) {
         return enrollmentRepository.findByStudent_IdStudent(studentId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Enrollment> getEnrollmentsByCourseId(Long courseId) {
         return enrollmentRepository.findByCourse_IdCourse(courseId);
     }

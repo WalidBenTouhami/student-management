@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: student-management-ingress
+  namespace: student-management
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /student/$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+    - host: student.local
+      http:
+        paths:
+          - path: /student(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: student-management-service
+                port:
+                  number: 8089
