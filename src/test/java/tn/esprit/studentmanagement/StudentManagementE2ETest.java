@@ -98,6 +98,6 @@ class StudentManagementE2ETest {
         ResponseEntity<StudentDTO> response = restTemplate.getForEntity(
             "/api/students/" + studentId, StudentDTO.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(java.util.Objects.requireNonNull(response.getBody()).getIdDepartment()).isEqualTo(departmentId);
+        assertThat(java.util.Objects.requireNonNull(response.getBody()).getIdStudent()).isEqualTo(studentId);
     }
 }
