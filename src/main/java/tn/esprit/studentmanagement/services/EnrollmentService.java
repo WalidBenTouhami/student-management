@@ -40,11 +40,11 @@ public class EnrollmentService implements IEnrollmentService {
 
     @Override
     public List<Enrollment> getEnrollmentsByStudentId(Long studentId) {
-        return enrollmentRepository.findByStudentId(studentId);
+        return enrollmentRepository.findByStudent_IdStudent(studentId);
     }
 
     @Override
     public List<Enrollment> getEnrollmentsByCourseId(Long courseId) {
-        return enrollmentRepository.findByCourseId(courseId);
+        return enrollmentRepository.findByCourse_IdCourse(courseId);
     }
 }

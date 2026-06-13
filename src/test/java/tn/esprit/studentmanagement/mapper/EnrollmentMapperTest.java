@@ -1,6 +1,9 @@
 package tn.esprit.studentmanagement.mapper;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import tn.esprit.studentmanagement.dto.EnrollmentDTO;
 import tn.esprit.studentmanagement.entities.Course;
 import tn.esprit.studentmanagement.entities.Enrollment;
@@ -10,13 +13,12 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Pure unit test — no Spring context needed.
- * Instantiates the MapStruct-generated impl directly.
- */
+@SpringBootTest
+@ActiveProfiles("test")
 class EnrollmentMapperTest {
 
-    private final EnrollmentMapper mapper = new EnrollmentMapperImpl();
+    @Autowired
+    private EnrollmentMapper mapper;
 
     @Test
     void toDto_null_returnsNull() {
