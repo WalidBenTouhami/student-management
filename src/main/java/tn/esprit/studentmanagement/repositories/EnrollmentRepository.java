@@ -5,6 +5,9 @@ import tn.esprit.studentmanagement.entities.Enrollment;
 
 import java.util.List;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     List<Enrollment> findByStudent_IdStudent(Long studentId);

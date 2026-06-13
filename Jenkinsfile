@@ -395,12 +395,11 @@ pipeline {
 ║  Env      : Minikube / ${K8S_NAMESPACE}      ║
 ╚══════════════════════════════════════════════╝
                 """
-                // Uncomment to enable Slack notification:
-                // slackSend(
-                //     channel: '#devops-alerts',
-                //     color: 'good',
-                //     message: "✅ *${JOB_NAME}* build #${BUILD_NUMBER} succeeded. Image: `${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}`"
-                // )
+                // Slack Notification
+                // slackSend(channel: '#devops-alerts', color: 'good', message: "✅ *${JOB_NAME}* build #${BUILD_NUMBER} succeeded. Image: `${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}`")
+                
+                // Email Notification
+                // emailext(subject: "SUCCESS: Job '${JOB_NAME}' [${BUILD_NUMBER}]", body: "Check console output at ${BUILD_URL}", to: "devops@example.com")
             }
         }
 
@@ -413,12 +412,11 @@ pipeline {
 ║  Check Jenkins logs and cluster state.       ║
 ╚══════════════════════════════════════════════╝
                 """
-                // Uncomment to enable Slack notification:
-                // slackSend(
-                //     channel: '#devops-alerts',
-                //     color: 'danger',
-                //     message: "❌ *${JOB_NAME}* build #${BUILD_NUMBER} FAILED. <${BUILD_URL}|View logs>"
-                // )
+                // Slack Notification
+                // slackSend(channel: '#devops-alerts', color: 'danger', message: "❌ *${JOB_NAME}* build #${BUILD_NUMBER} FAILED. <${BUILD_URL}|View logs>")
+                
+                // Email Notification
+                // emailext(subject: "FAILED: Job '${JOB_NAME}' [${BUILD_NUMBER}]", body: "Check console output at ${BUILD_URL}", to: "devops@example.com")
             }
         }
 

@@ -276,8 +276,8 @@ jacoco, html-publisher, credentials-binding
 | Control | Implementation |
 |---|---|
 | **Zero hardcoded secrets** | All secrets via Jenkins Credentials → K8s Secrets |
-| **Distroless image** | `gcr.io/distroless/java21-debian12:nonroot` |
-| **Non-root container** | UID 65532, no privilege escalation |
+| **Alpine image** | `eclipse-temurin:21-jre-alpine` |
+| **Non-root container** | `appuser` (UID custom), no privilege escalation |
 | **CVE scanning** | Trivy on every build (CRITICAL = pipeline fail) |
 | **Pod Security Standards** | `restricted` profile on namespace |
 | **NetworkPolicy** | MySQL accessible only from app pods |

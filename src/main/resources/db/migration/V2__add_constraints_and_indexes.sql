@@ -5,11 +5,6 @@ ALTER TABLE students
 ADD CONSTRAINT IF NOT EXISTS fk_student_department 
 FOREIGN KEY (department_id) REFERENCES departments(id_department);
 
--- Course -> Department
-ALTER TABLE courses 
-ADD CONSTRAINT IF NOT EXISTS fk_course_department 
-FOREIGN KEY (department_id) REFERENCES departments(id_department);
-
 -- Enrollment -> Student
 ALTER TABLE enrollments 
 ADD CONSTRAINT IF NOT EXISTS fk_enrollment_student 
@@ -23,7 +18,6 @@ FOREIGN KEY (course_id) REFERENCES courses(id_course);
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_students_email ON students(email);
 CREATE INDEX IF NOT EXISTS idx_students_dept ON students(department_id);
-CREATE INDEX IF NOT EXISTS idx_courses_dept ON courses(department_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_student ON enrollments(student_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_course ON enrollments(course_id);
 
