@@ -10,7 +10,7 @@ ARG GIT_COMMIT
 # STAGE 1 — Dependency cache layer
 #   pom.xml copied first → dependency layer only invalidated when pom changes
 # ─────────────────────────────────────────────────────────────────────────────
-FROM maven:3.9.4-eclipse-temurin-21 AS builder
+FROM maven:3.9.15-eclipse-temurin-26 AS builder
 WORKDIR /workspace
 
 # 1a) Maven wrapper + POM only (maximises cache hit rate)
