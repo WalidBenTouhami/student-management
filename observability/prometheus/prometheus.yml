@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'student-management-api'
+    metrics_path: '/student/actuator/prometheus'
+    # Use host.docker.internal to reach the host machine where the app runs locally
+    # If the app is in another docker network, this should point to that container.
+    static_configs:
+      - targets: ['host.docker.internal:8089']
