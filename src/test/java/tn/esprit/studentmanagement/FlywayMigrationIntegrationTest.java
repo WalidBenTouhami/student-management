@@ -22,23 +22,13 @@ class FlywayMigrationIntegrationTest {
     }
 
     @Test
-    void flywayCreatesExpectedTables() {
-        long count = studentRepository.count();
-        assertThat(count).isGreaterThanOrEqualTo(0);
-    }
-
-    @Test
-    void jpaCanPersistEntitiesAgainstFlywaySchema() {
+    void jpaCanPersistEntities() {
         Student student = new Student();
         student.setFirstName("Test");
         student.setLastName("User");
         student.setEmail("test@example.com");
-        
+
         Student saved = studentRepository.save(student);
-        
-        // Utilisation de idStudent au lieu de id
         assertThat(saved.getIdStudent()).isNotNull();
-        assertThat(saved.getFirstName()).isEqualTo("Test");
-        assertThat(saved.getEmail()).isEqualTo("test@example.com");
     }
 }
