@@ -12,7 +12,7 @@ spec:
       http:
         paths:
           - path: /student(/|$)(.*)
-            pathType: Prefix
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: student-management-service
