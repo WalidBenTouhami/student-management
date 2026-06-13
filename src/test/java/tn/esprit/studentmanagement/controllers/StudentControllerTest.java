@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(StudentController.class)
 @WithMockUser(roles = "API")
-@SuppressWarnings({"null", "deprecation"})
+@SuppressWarnings({"null"})
 class StudentControllerTest {
 
     @Autowired
