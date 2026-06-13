@@ -1,9 +1,6 @@
 package tn.esprit.studentmanagement.mapper;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import tn.esprit.studentmanagement.dto.EnrollmentDTO;
 import tn.esprit.studentmanagement.entities.Course;
 import tn.esprit.studentmanagement.entities.Enrollment;
@@ -13,12 +10,13 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
+/**
+ * Pure unit test — no Spring context needed.
+ * Instantiates the MapStruct-generated impl directly.
+ */
 class EnrollmentMapperTest {
 
-    @Autowired
-    private EnrollmentMapper mapper;
+    private final EnrollmentMapper mapper = new EnrollmentMapperImpl();
 
     @Test
     void toDto_null_returnsNull() {
@@ -36,7 +34,7 @@ class EnrollmentMapperTest {
         e.setIdEnrollment(7L);
         e.setEnrollmentDate(LocalDate.of(2021, 9, 1));
         e.setGrade(15.5);
-        e.setStatus("ACTIVE");   // entity.status is String
+        e.setStatus("ACTIVE");
         Student s = new Student();
         s.setIdStudent(2L);
         Course c = new Course();
@@ -78,7 +76,6 @@ class EnrollmentMapperTest {
 
         Enrollment e = mapper.toEntity(dto);
         assertNotNull(e);
-        // invalid status is normalized to null
         assertNull(e.getStatus());
     }
 }
