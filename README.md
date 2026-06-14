@@ -390,10 +390,8 @@ student-management/
 │       └── NOTES.txt
 └── docs/                             # Technical documentation
     ├── architecture.md
-    ├── jenkins-setup.md
-    ├── kubernetes-setup.md
     ├── security.md
-    └── advanced-setup.md
+    └── troubleshooting.md
 ```
 
 ---
@@ -436,10 +434,5 @@ helm history student-management -n student-management
 ## 📚 Documentation
 
 - [Architecture Details](docs/architecture.md)
-- [Jenkins Setup Guide](docs/jenkins-setup.md)
-- [Kubernetes Setup Guide](docs/kubernetes-setup.md)
 - [Security Decisions](docs/security.md)
-
-## 🚀 Advanced DevOps Setup
-
-See [docs/advanced-setup.md](docs/advanced-setup.md) for instructions on Ingress, Autoscaling (HPA), Monitoring (Prometheus, Grafana, Loki), and GitOps (ArgoCD).
+- [Troubleshooting Guide](docs/troubleshooting.md)
