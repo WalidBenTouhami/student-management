@@ -109,8 +109,8 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     withCredentials([string(credentialsId: 'Sonar_token', variable: 'SONAR_TOKEN')]) {
-                        sh "echo 'Starting Sonar analysis...'"
-                        sh "./mvnw sonar:sonar -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=\$SONAR_TOKEN -Dsonar.projectVersion=${GIT_COMMIT_SHORT} -B"
+                        sh 'echo "Starting Sonar analysis..."'
+                        sh './mvnw sonar:sonar -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=${SONAR_TOKEN} -Dsonar.projectVersion=${GIT_COMMIT_SHORT} -B'
                     }
                 }
             }
