@@ -205,7 +205,7 @@ helm upgrade --install student-management ./helm/student-management `
   --atomic `
   --timeout 5m
 ```
-
+-----
 ### 3. Access the Application
 ```bash
 # Get Minikube IP
@@ -438,5 +438,6 @@ helm history student-management -n student-management
 
 
  # #   A d v a n c e d   D e v O p s   S e t u p 
- S e e   [ d o c s / a d v a n c e d - s e t u p . m d ] ( d o c s / a d v a n c e d - s e t u p . m d )   f o r   i n s t r u c t i o n s   o n   I n g r e s s ,   A u t o s c a l i n g   ( H P A ) ,   M o n i t o r i n g   ( P r o m e t h e u s ,   G r a f a n a ,   L o k i ) ,   a n d   G i t O p s   ( A r g o C D ) .  
+ S e e   [ d o c s / a d v a n c e d - s e t u p . m d ] ( d o c s / a d v a n c e d - s e t u p . m d )   f o r   i n s t r u c t i o n s   o n   I n g r e s s ,   A u t o s c a l i n g   ( H P A ) ,   M o n i t o r i n g   ( P r o m e t h e u s ,   G r a f a n a ,   L o k i ) ,   a n d   G i t O p s   ( A r g o C D ) . 
+ 
  
