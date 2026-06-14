@@ -1,13 +1,28 @@
-# Student Management System — DevOps Stack
+<div align="center">
+  <h1>🎓 Student Management System — DevOps Stack</h1>
+  <p>
+    <b>Production-ready Spring Boot 3 / Java 21 / MySQL 8 application</b><br>
+    <i>Complete with CI/CD pipeline, Kubernetes Helm deployment, security scanning, and observability.</i>
+  </p>
 
-> **Production-ready** Spring Boot 3 / Java 21 / MySQL 8 application with a complete CI/CD pipeline, Kubernetes deployment via Helm, security scanning, and observability.
-
-[![Quality Gate Status](https://img.shields.io/badge/SonarQube-Quality%20Gate-brightgreen)](http://localhost:9000)
-[![Docker Image](https://img.shields.io/docker/v/walid369/student-management?label=Docker)](https://hub.docker.com/r/walid369/student-management)
+  <!-- Badges -->
+  <p>
+    <a href="https://spring.io/projects/spring-boot"><img src="https://img.shields.io/badge/Spring_Boot-3.4.13-brightgreen.svg?logo=springboot" alt="Spring Boot"></a>
+    <a href="https://java.com"><img src="https://img.shields.io/badge/Java-21-orange.svg?logo=openjdk" alt="Java 21"></a>
+    <a href="https://www.mysql.com/"><img src="https://img.shields.io/badge/MySQL-8.0-blue.svg?logo=mysql" alt="MySQL"></a>
+    <br>
+    <a href="https://jenkins.io"><img src="https://img.shields.io/badge/Build-Jenkins_CI-blue.svg?logo=jenkins" alt="Jenkins"></a>
+    <a href="https://hub.docker.com/r/walid369/student-management"><img src="https://img.shields.io/docker/v/walid369/student-management?label=Docker&logo=docker" alt="Docker Image"></a>
+    <a href="https://kubernetes.io/"><img src="https://img.shields.io/badge/Deployment-Helm-blue.svg?logo=helm" alt="Helm"></a>
+    <br>
+    <a href="http://localhost:9000"><img src="https://img.shields.io/badge/SonarQube-Quality%20Gate%20Passed-brightgreen.svg?logo=sonarqube" alt="Quality Gate Status"></a>
+    <a href="https://trivy.dev/"><img src="https://img.shields.io/badge/Security-Trivy_Scanned-blueviolet.svg?logo=aquasecurity" alt="Trivy Scanned"></a>
+  </p>
+</div>
 
 ---
 
-## Architecture
+## 🏛️ Architecture
 
 ```mermaid
 graph TB
@@ -69,15 +84,15 @@ graph TB
 
 | Tool | Version | Purpose |
 |---|---|---|
-| Java (JDK) | 21 | Build & run |
-| Maven | 3.9+ | Build tool |
-| Docker | 24+ | Containerization |
-| kubectl | 1.28+ | K8s CLI |
-| Helm | 3.12+ | K8s package manager |
-| Minikube | 1.32+ | Local K8s cluster |
-| Trivy | 0.48+ | Security scanner |
-| Jenkins | 2.440+ | CI/CD |
-| SonarQube | 10.x | Code quality |
+| **Java (JDK)** | 21 | Build & run |
+| **Maven** | 3.9+ | Build tool |
+| **Docker** | 24+ | Containerization |
+| **kubectl** | 1.28+ | K8s CLI |
+| **Helm** | 3.12+ | K8s package manager |
+| **Minikube** | 1.32+ | Local K8s cluster |
+| **Trivy** | 0.48+ | Security scanner |
+| **Jenkins** | 2.440+ | CI/CD |
+| **SonarQube** | 10.x | Code quality |
 
 ---
 
@@ -205,7 +220,7 @@ helm upgrade --install student-management ./helm/student-management `
   --atomic `
   --timeout 5m
 ```
------
+
 ### 3. Access the Application
 ```bash
 # Get Minikube IP
@@ -250,7 +265,7 @@ Configure these in **Jenkins → Manage Jenkins → Credentials → System → G
 
 ### Required Jenkins Plugins
 
-```
+```text
 git, pipeline, sonarqube-scanner, docker-pipeline, 
 jacoco, html-publisher, credentials-binding
 ```
@@ -259,15 +274,15 @@ jacoco, html-publisher, credentials-binding
 
 | Stage | Description | Fails on |
 |---|---|---|
-| Checkout | Git clone with credentials | Invalid repo/credentials |
-| Build & Test | `mvnw clean verify` + JaCoCo | Test failure / coverage < 80% |
-| SonarQube Analysis | `mvn sonar:sonar` | SonarQube unreachable |
-| Quality Gate | Wait for SonarQube result | Quality Gate status != OK |
-| Build Docker Image | Multi-stage build with OCI labels | Build error |
-| Trivy Scan | CVE scan, fail on CRITICAL | Any CRITICAL CVE |
-| Push to Docker Hub | Push :sha + :latest | Auth failure |
-| Deploy to Kubernetes | `helm upgrade --install --atomic` | Helm failure / timeout |
-| Smoke Test | Health check + pod count | App not healthy / rollback |
+| **Checkout** | Git clone with credentials | Invalid repo/credentials |
+| **Build & Test** | `mvnw clean verify` + JaCoCo | Test failure / coverage < 80% |
+| **SonarQube Analysis**| `mvn sonar:sonar` | SonarQube unreachable |
+| **Quality Gate** | Wait for SonarQube result | Quality Gate status != OK |
+| **Build Docker** | Multi-stage build with OCI labels| Build error |
+| **Trivy Scan** | CVE scan, fail on CRITICAL | Any CRITICAL CVE |
+| **Push to Docker Hub**| Push `:sha` + `:latest` | Auth failure |
+| **Deploy to K8s** | `helm upgrade --install --atomic`| Helm failure / timeout |
+| **Smoke Test** | Health check + pod count | App not healthy / rollback |
 
 ---
 
@@ -275,24 +290,24 @@ jacoco, html-publisher, credentials-binding
 
 | Control | Implementation |
 |---|---|
-| **Zero hardcoded secrets** | All secrets via Jenkins Credentials → K8s Secrets |
-| **Alpine image** | `eclipse-temurin:21-jre-alpine` |
-| **Non-root container** | `appuser` (UID custom), no privilege escalation |
-| **CVE scanning** | Trivy on every build (CRITICAL = pipeline fail) |
+| **Zero hardcoded secrets** | All secrets injected via Jenkins Credentials → K8s Secrets |
+| **Alpine Base Image** | Uses `eclipse-temurin:21-jre-alpine` |
+| **Non-root container** | Run as `appuser` (UID custom), no privilege escalation |
+| **CVE Scanning** | Trivy on every build (CRITICAL = pipeline fail) |
 | **Pod Security Standards** | `restricted` profile on namespace |
 | **NetworkPolicy** | MySQL accessible only from app pods |
 | **seccompProfile** | `RuntimeDefault` on all pods |
-| **Capabilities dropped** | `ALL` capabilities dropped |
-| **Dependency updates** | Dependabot (weekly Maven + Docker) |
+| **Capabilities dropped** | `ALL` Linux capabilities dropped |
+| **Dependency updates** | Dependabot configured (weekly Maven + Docker updates) |
 
 ---
 
 ## 📊 Observability
 
 ### Prometheus Metrics
-- Endpoint: `GET /student/actuator/prometheus`
-- Micrometer tags: `application=student-management`
-- Annotations on pods for auto-discovery
+- **Endpoint**: `GET /student/actuator/prometheus`
+- **Tags**: `application=student-management`
+- **Discovery**: Annotations on pods for auto-discovery by Prometheus Operator.
 
 ### Health Endpoints
 ```bash
@@ -344,14 +359,14 @@ make clean          # Clean build + Docker
 
 ## 📁 Project Structure
 
-```
+```text
 student-management/
 ├── src/                              # Java source code
 │   ├── main/java/                    # Application code
 │   └── main/resources/
 │       ├── application.properties    # Base config
-│       ├── application-prod.properties
-│       └── application-k8s.properties  # K8s profile
+│       ├── application-prod.yml      # Prod config
+│       └── application-test.yml      # Test profile
 ├── Dockerfile                        # Multi-stage, distroless
 ├── Jenkinsfile                       # 9-stage CI/CD pipeline
 ├── Makefile                          # Reproducible commands
@@ -373,23 +388,12 @@ student-management/
 │       ├── mysql-deployment.yaml
 │       ├── mysql-pvc.yaml
 │       └── NOTES.txt
-├── k8s/                              # Raw YAML manifests
-│   ├── namespace.yaml
-│   ├── configmap.yaml
-│   ├── app-deployment.yaml
-│   ├── app-service.yaml
-│   ├── mysql.yaml
-│   ├── hpa.yaml
-│   ├── networkpolicy.yaml
-│   └── monitoring/
-│       └── servicemonitor.yaml
-├── docs/                             # Technical documentation
-│   ├── architecture.md
-│   ├── jenkins-setup.md
-│   ├── kubernetes-setup.md
-│   └── security.md
-└── scripts/
-    └── jenkins_jobs_monitor.sh       # Jenkins + K8s monitor
+└── docs/                             # Technical documentation
+    ├── architecture.md
+    ├── jenkins-setup.md
+    ├── kubernetes-setup.md
+    ├── security.md
+    └── advanced-setup.md
 ```
 
 ---
@@ -436,8 +440,6 @@ helm history student-management -n student-management
 - [Kubernetes Setup Guide](docs/kubernetes-setup.md)
 - [Security Decisions](docs/security.md)
 
+## 🚀 Advanced DevOps Setup
 
- # #   A d v a n c e d   D e v O p s   S e t u p 
- S e e   [ d o c s / a d v a n c e d - s e t u p . m d ] ( d o c s / a d v a n c e d - s e t u p . m d )   f o r   i n s t r u c t i o n s   o n   I n g r e s s ,   A u t o s c a l i n g   ( H P A ) ,   M o n i t o r i n g   ( P r o m e t h e u s ,   G r a f a n a ,   L o k i ) ,   a n d   G i t O p s   ( A r g o C D ) . 
- 
- 
+See [docs/advanced-setup.md](docs/advanced-setup.md) for instructions on Ingress, Autoscaling (HPA), Monitoring (Prometheus, Grafana, Loki), and GitOps (ArgoCD).
