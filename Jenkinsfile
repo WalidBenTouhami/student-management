@@ -63,9 +63,17 @@ pipeline {
                     credentialsId: 'github-token'
 
                 script {
-                    def commitHash = sh(returnStdout: true, script: 'git rev-parse --short HEAD || echo latest').trim()
-                    env.GIT_COMMIT_SHORT = commitHash ?: 'latest'
-                    env.DOCKER_TAG = env.GIT_COMMIT_SHORT
+                    def commitHash = ""
+                    try {
+                        commitHash = sh(returnStdout: true, script: 'git log -1 --format="%h"').trim()
+                    } catch (Exception e) {
+                        commitHash = "latest"
+                    }
+                    if (commitHash == null || commitHash == "" || commitHash == "null") {
+                        commitHash = "latest"
+                    }
+                    env.GIT_COMMIT_SHORT = commitHash
+                    env.DOCKER_TAG = commitHash
                     echo "🔖 Git commit: ${env.GIT_COMMIT_SHORT}"
                     echo "🏷️  Docker tag: ${env.DOCKER_NAMESPACE}/${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                 }
