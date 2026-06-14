@@ -35,9 +35,8 @@ pipeline {
         HELM_CHART        = "./helm/student-management"
         KUBECONFIG        = credentials('kubeconfig-minikube')
 
-        // ── Computed at runtime (set in Checkout stage) ───────────────────
-        DOCKER_TAG        = ""   // set to GIT_COMMIT_SHORT below
-        GIT_COMMIT_SHORT  = ""
+        // 🔹 Computed at runtime (set in Checkout stage) 
+        // ---------------------------------------------------
     }
 
     options {
@@ -145,14 +144,14 @@ pipeline {
                     sh """
                         docker build \
                             --pull \
-                            --build-arg IMAGE_TAG=${DOCKER_TAG} \
+                            --build-arg IMAGE_TAG=${env.DOCKER_TAG} \
                             --build-arg BUILD_DATE=${buildDate} \
-                            --build-arg GIT_COMMIT=${GIT_COMMIT_SHORT} \
-                            -t ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG} \
+                            --build-arg GIT_COMMIT=${env.GIT_COMMIT_SHORT} \
+                            -t ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${env.DOCKER_TAG} \
                             -t ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:latest \
                             .
                     """
-                    echo "✅ Docker image built: ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    echo "✅ Docker image built: ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${env.DOCKER_TAG}"
                 }
             }
         }
@@ -174,7 +173,7 @@ pipeline {
                             --severity HIGH,CRITICAL \
                             --format json \
                             --output target/trivy-reports/trivy-report.json \
-                            ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
+                            ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${env.DOCKER_TAG}
                     """
                     // Table report (human-readable — fails on CRITICAL)
                     def trivyExitCode = sh(
@@ -184,7 +183,7 @@ pipeline {
                                 --exit-code 1 \
                                 --severity CRITICAL \
                                 --format table \
-                                ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
+                                ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${env.DOCKER_TAG}
                         """
                     )
                     if (trivyExitCode != 0) {
@@ -215,12 +214,12 @@ pipeline {
                 )]) {
                     sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin docker.io
-                        docker push ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker push ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${env.DOCKER_TAG}
                         docker push ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:latest
                         docker logout docker.io
                     '''
                 }
-                echo "✅ Pushed: ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG} + :latest"
+                echo "✅ Pushed: ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${env.DOCKER_TAG} + :latest"
             }
         }
 
@@ -269,7 +268,7 @@ pipeline {
                                 --history-max 5 \
                                 -f ${HELM_CHART}/values.yaml \
                                 -f ${HELM_CHART}/values-prod.yaml \
-                                --set image.tag=${DOCKER_TAG} \
+                                --set image.tag=${env.DOCKER_TAG} \
                                 --set image.repository=${DOCKER_NAMESPACE}/${DOCKER_IMAGE} \
                                 --set mysqlSecret.rootPassword="${MYSQL_ROOT_PASSWORD}" \
                                 --set mysqlSecret.appUser="${MYSQL_APP_USER}" \
@@ -391,13 +390,13 @@ pipeline {
 ╔══════════════════════════════════════════════╗
 ║  ✅ PIPELINE SUCCEEDED                       ║
 ║  Build    : #${BUILD_NUMBER}                 ║
-║  Commit   : ${GIT_COMMIT_SHORT}              ║
-║  Image    : ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}
+║  Commit   : ${env.GIT_COMMIT_SHORT}              ║
+║  Image    : ${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${env.DOCKER_TAG}
 ║  Env      : Minikube / ${K8S_NAMESPACE}      ║
 ╚══════════════════════════════════════════════╝
                 """
                 // Slack Notification
-                // slackSend(channel: '#devops-alerts', color: 'good', message: "✅ *${JOB_NAME}* build #${BUILD_NUMBER} succeeded. Image: `${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${DOCKER_TAG}`")
+                // slackSend(channel: '#devops-alerts', color: 'good', message: "✅ *${JOB_NAME}* build #${BUILD_NUMBER} succeeded. Image: `${DOCKER_NAMESPACE}/${DOCKER_IMAGE}:${env.DOCKER_TAG}`")
                 
                 // Email Notification
                 // emailext(subject: "SUCCESS: Job '${JOB_NAME}' [${BUILD_NUMBER}]", body: "Check console output at ${BUILD_URL}", to: "devops@example.com")
