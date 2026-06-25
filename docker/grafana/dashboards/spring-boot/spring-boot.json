@@ -1,0 +1,12 @@
+{
+  "title": "Spring Boot Dashboard",
+  "uid": "spring-boot-dashboard",
+  "version": 1,
+  "tags": ["spring-boot"],
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [],
+  "schemaVersion": 38
+}

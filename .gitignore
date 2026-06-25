@@ -1,0 +1,644 @@
+# =============================================
+# 🔐 FICHIERS SENSIBLES ET SECRETS
+# =============================================
+
+# Vagrant - Ne JAMAIS commiter le Vagrantfile s'il contient des secrets
+# Créez plutôt un Vagrantfile.example à partager
+Vagrantfile
+Vagrantfile.example
+!.Vagrantfile.example
+.vagrant/
+vagrant_*.log
+vagrant_*.pid
+vagrant_*.lock
+*.vagrant
+
+# Fichiers de configuration avec secrets
+# (gardez des fichiers .example pour le partage)
+*.secret.yml
+*.secret.properties
+*.secret.yaml
+*.secrets.yml
+*.secrets.yaml
+*.encrypted.yml
+*.encrypted.yaml
+*.encrypted.properties
+
+# Variables d'environnement
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+.envrc
+*.env
+*.envrc
+
+# Identifiants et credentials
+credentials/
+.credentials
+*.credentials
+*.pem
+*.key
+*.crt
+*.csr
+*.pkcs12
+*.jks
+*.keystore
+*.truststore
+*.p12
+*.pfx
+*.cer
+*.der
+*.pub
+*.priv
+*.id_rsa
+*.id_rsa.pub
+*.id_ed25519
+*.id_ed25519.pub
+*.ppk
+*.p8
+
+# Tokens et clés API
+*.token
+*.tokens
+api-keys.yml
+api-keys.properties
+oauth-credentials.yml
+oauth-credentials.properties
+*.github_token
+*.gitlab_token
+*.docker_token
+*.jenkins_token
+*.slack_token
+*.slack_webhook
+
+# Mots de passe
+passwords.yml
+passwords.properties
+passwords.txt
+*.password
+*.passwd
+*.pwd
+
+# Certificats SSL
+ssl/
+certs/
+certificates/
+*.crt
+*.csr
+*.key
+*.pem
+*.p12
+*.pfx
+*.der
+*.cer
+!ssl/README.md
+!certs/README.md
+
+# Configuration Spring Boot avec secrets
+application-*.secret.properties
+application-*.secret.yml
+application-*.secret.yaml
+bootstrap-*.secret.properties
+bootstrap-*.secret.yml
+application-production.properties
+application-production.yml
+application-prod.properties
+application-prod.yml
+!application-production.example.properties
+!application-prod.example.yml
+
+# =============================================
+# 🐳 DOCKER - Fichiers sensibles
+# =============================================
+docker/.env
+docker/**/.env
+docker/**/secrets/
+docker/secrets/
+.docker/
+docker-compose.override.yml
+docker-compose.override.yaml
+docker-compose.*.override.yml
+docker-compose.*.override.yaml
+Dockerfile.*.secret
+*.dockerignore
+!docker-compose.override.example.yml
+
+# =============================================
+# ☸️ KUBERNETES - Fichiers sensibles
+# =============================================
+k8s/secrets/
+k8s/*-secret.yaml
+k8s/*-secrets.yaml
+k8s/**/*-secret.yaml
+k8s/**/*-secrets.yaml
+k8s/tls/
+k8s/certs/
+*.kubeconfig
+.kube/
+.minikube/
+!k8s/secrets/README.md
+
+# =============================================
+# 🐘 TERRAFORM - Secrets
+# =============================================
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+terraform.tfvars.json
+*.terraform.lock.hcl
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+*.auto.tfvars
+*.auto.tfvars.json
+!terraform.tfvars.example
+
+# =============================================
+# 🔐 ANSIBLE
+# =============================================
+*.vault
+*.vault.yml
+*.vault.yaml
+ansible/vault_pass.txt
+ansible/vault_password_file
+ansible/group_vars/*/vault.yml
+ansible/host_vars/*/vault.yml
+!ansible/group_vars/*/vault.example.yml
+
+# =============================================
+# 🔑 SSH ET AUTHENTIFICATION
+# =============================================
+.ssh/
+ssh/
+*.pem
+*.key
+*.ppk
+authorized_keys
+known_hosts
+id_rsa
+id_rsa.pub
+id_dsa
+id_dsa.pub
+id_ecdsa
+id_ecdsa.pub
+id_ed25519
+id_ed25519.pub
+
+# =============================================
+# 📁 LOGS ET CACHES (peuvent contenir des secrets)
+# =============================================
+logs/
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+tmp/
+temp/
+*.pid
+*.pid.lock
+*.seed
+*.sqlite
+*.db
+
+# =============================================
+# 🛠️ FICHIERS DE BUILD ET CACHE
+# =============================================
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.gz
+*.bz2
+*.xz
+*.deb
+*.rpm
+*.pkg
+*.dmg
+*.exe
+*.msi
+*.dll
+*.so
+*.dylib
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.ilk
+*.exp
+*.map
+*.nupkg
+*.snupkg
+
+# Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Gradle
+.gradle/
+gradle/
+gradle-wrapper.jar
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# =============================================
+# 💻 FICHIERS D'IDE
+# =============================================
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/dictionaries
+.idea/**/shelf
+.idea/**/contentModel.xml
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+.idea/**/gradle.xml
+.idea/**/libraries
+.idea/**/modules.xml
+.idea/**/compiler.xml
+.idea/**/misc.xml
+.idea/**/vcs.xml
+.idea/**/projectCodeStyle.xml
+.idea/**/encodings.xml
+.idea/**/runConfigurations/
+.idea/**/inspectionProfiles/
+.idea/**/copyright/
+.idea/**/scopes/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/tasks.xml
+
+# Eclipse / STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+.metadata/
+.vscode/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+nbactions.xml
+nb-configuration.xml
+
+# VS Code
+.vscode/
+.vscode/**/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# =============================================
+# 🟢 NODE.JS / NPM / ANGULAR
+# =============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+dist/
+.angular/
+.npm/
+.yarn/
+.yarn-integrity
+.eslintcache
+.stylelintcache
+.rpt2_cache/
+.rts2_cache/
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.output/
+.serverless/
+.vercel/
+.netlify/
+
+# =============================================
+# 📊 SONARQUBE
+# =============================================
+.sonar/
+sonar-project.properties
+.scannerwork/
+.idea/sonarlint/
+sonar-scanner-*.zip
+
+# =============================================
+# 🐬 BASE DE DONNÉES
+# =============================================
+*.sql
+*.sqlite
+*.db
+*.dump
+*.sql.gz
+*.backup
+mysql-data/
+postgres-data/
+mongodb-data/
+redis-data/
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# =============================================
+# 🐍 PYTHON
+# =============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv*
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+.hypothesis/
+.python-version
+.pdm.toml
+
+# =============================================
+# 📦 RAPPORTS ET DOCUMENTATION
+# =============================================
+*.pdf
+*.docx
+*.xlsx
+*.pptx
+reports/
+test-reports/
+coverage/
+surefire-reports/
+failsafe-reports/
+test-output/
+jacoco/
+.attach_pid*
+site/
+gh-pages/
+docs/_build/
+docs/api/
+docs/generated/
+apidocs/
+javadoc/
+
+# =============================================
+# 🐧 OS FILES
+# =============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.DS_Store
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+*.url
+*.scr
+*.com
+*.pif
+*.application
+
+# Linux
+*~
+.directory
+*.swp
+*.swo
+*.orig
+*.old
+*.lock
+*.part
+*.nfs*
+*.tmp
+*.temp
+
+# =============================================
+# 🚀 AUTRES
+# =============================================
+*.o
+*.a
+*.lib
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.gz
+*.bz2
+*.xz
+*.deb
+*.rpm
+*.pkg
+*.dmg
+*.exe
+*.msi
+*.dll
+*.so
+*.dylib
+
+# =============================================
+# 🔄 CI/CD - Fichiers locaux
+# =============================================
+.github/
+.gitlab/
+.azure/
+.bitbucket/
+.circleci/
+.travis.yml
+.jenkins/
+Jenkinsfile.local
+jenkins_home/
+jenkins_backup/
+.gitlab-ci.yml
+.azure-pipelines.yml
+bitbucket-pipelines.yml
+buildkite/
+.github/workflows/
+.gitlab/merge_request_templates/
+.gitlab/issue_templates/
+
+# =============================================
+# 🧪 TESTS
+# =============================================
+test-output/
+surefire-reports/
+failsafe-reports/
+.pytest_cache/
+.coverage
+.coveralls.yml
+.jacoco
+*.log.test
+
+# =============================================
+# 📁 AUTRES CACHES ET FICHIERS
+# =============================================
+.cache/
+.checkstyle/
+.pmd/
+.findbugs/
+.spotbugs/
+.cpd/
+.dockerignore
+.eslintcache
+.stylelintcache
+.prettiercache
+.tsbuildinfo
+.nuxt/
+.output/
+.serverless/
+.vercel/
+.netlify/
+
+# =============================================
+# ⚠️ FICHIERS DE DÉPLOIEMENT LOCAUX
+# =============================================
+!deploy/scripts/
+deploy/*.pid
+deploy/*.log
+deploy/secrets/
+!deploy/secrets/README.md
+
+# =============================================
+# 🛡️ FICHIERS DE SÉCURITÉ
+# =============================================
+.audit/
+.security/
+.sast/
+.dast/
+.owasp/
+dependency-check-report.html
+dependency-check-report.xml
+sast-report.json
+dast-report.json
+owasp-report.html
+
+# =============================================
+# 📧 FICHIERS DE NOTIFICATION
+# =============================================
+email-templates/
+!email-templates/README.md
+*.email.template
+*.notification.template
+
+# =============================================
+# 🔧 FICHIERS DE CONFIGURATION LOCAUX
+# =============================================
+*.local
+*.local.yml
+*.local.properties
+*.local.json
+*.local.yaml
+*.dev
+*.dev.yml
+*.dev.properties
+*.test
+*.test.yml
+*.test.properties
+custom.properties
+custom.yml
+local.properties
+local.yml
+
+# =============================================
+# 📋 EXEMPLE DE FICHIERS À CONSERVER
+# =============================================
+# Ces fichiers sont des exemples, pas des secrets réels
+!.env.example
+!application.example.properties
+!application.example.yml
+!Vagrantfile.example
+!docker-compose.example.yml
+!terraform.tfvars.example
+!secrets.example.yml
+!k8s/secrets.example.yaml
+!application-production.example.properties
+!application-prod.example.yml
+
+# =============================================
+# 📝 NOTES ET DOCUMENTATION TEMPORAIRE
+# =============================================
+*.md.tmp
+*.txt.tmp
+*.notes
+*.scratch
+*.draft
+TODO.md.tmp
+*.backup.md
+*.old.md
+.env
+.env.*
+.env
+.env.*
+!.env.example

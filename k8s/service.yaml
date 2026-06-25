@@ -1,19 +1,20 @@
 # ============================================================
-# ☸️ KUBERNETES SERVICE - MYSQL
+# ☸️ KUBERNETES SERVICE - SPRING APP
 # ============================================================
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql-service
+  name: spring-service
   namespace: devops-tools
   labels:
-    app: mysql
+    app: spring-app
 spec:
   selector:
-    app: mysql
-  type: ClusterIP
+    app: spring-app
+  type: NodePort
   ports:
-    - port: 3306
-      targetPort: 3306
-      name: mysql
+    - port: 8089
+      targetPort: 8089
+      nodePort: 30080
+      name: http

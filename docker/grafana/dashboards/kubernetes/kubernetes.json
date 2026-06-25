@@ -1,0 +1,12 @@
+{
+  "title": "Kubernetes Dashboard",
+  "uid": "kubernetes-dashboard",
+  "version": 1,
+  "tags": ["kubernetes"],
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [],
+  "schemaVersion": 38
+}

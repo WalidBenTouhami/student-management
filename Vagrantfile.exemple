@@ -1,0 +1,249 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# ============================================================
+# 📝 Vagrantfile.example - MODÈLE DE CONFIGURATION
+# ============================================================
+#
+# ⚠️  CE FICHIER EST UN TEMPLATE - NE PAS EXÉCUTER DIRECTEMENT
+#
+# 📌 UTILISATION :
+#   1. Copiez ce fichier vers Vagrantfile
+#   2. Adaptez les variables de configuration
+#   3. Vagrant utilisera le fichier Vagrantfile
+#
+# ============================================================
+
+# 🌐 VARIABLES DE CONFIGURATION - À ADAPTER
+# ============================================================
+#
+# Remplacer les valeurs XXX par vos propres valeurs
+#
+$VM_IP = "192.168.56.XX"        # IP de la VM
+$VM_MEMORY = 4096               # RAM en Mo
+$VM_CPUS = 2                    # Nombre de CPU
+$VM_NAME = "devops-vm"          # Nom de la VM
+
+# 🔐 Configuration des services
+# ⚠️ NE PAS METTRE DE VRAIS SECRETS DANS CE FICHIER
+# Utiliser des valeurs d'exemple (ex: root123, password123)
+# Les vraies valeurs seront définies dans Vagrantfile
+
+$MYSQL_ROOT_PASSWORD = "change_me"      # À adapter
+$MYSQL_DATABASE = "studentdb"           # À adapter
+$MYSQL_USER = "spring"                  # À adapter
+$MYSQL_PASSWORD = "change_me"           # À adapter
+
+# ============================================================
+# 🚀 CONFIGURATION VAGRANT
+# ============================================================
+
+Vagrant.configure("2") do |config|
+
+  # ==========================================================
+  # 1. CONFIGURATION DE BASE
+  # ==========================================================
+
+  # Box à utiliser - À choisir selon vos besoins
+  # Options recommandées :
+  # - bento/ubuntu-22.04   (Ubuntu 22.04 LTS)
+  # - bento/ubuntu-24.04   (Ubuntu 24.04 LTS)
+  # - ubuntu/jammy64       (Ubuntu 22.04)
+  # - generic/debian12     (Debian 12)
+  # - fedora/38-cloud-base (Fedora 38)
+
+  config.vm.box = "bento/ubuntu-22.04"
+  config.vm.box_download_options = {"ssl-no-revoke" => true}
+  config.vm.hostname = $VM_NAME
+
+  # Timeout de démarrage
+  config.vm.boot_timeout = 600
+
+  # ==========================================================
+  # 2. RÉSEAU
+  # ==========================================================
+
+  # ❗ ADAPTATION NÉCESSAIRE
+  # Choisir une IP non utilisée sur votre réseau
+  # Plages recommandées : 192.168.56.x, 192.168.33.x
+
+  config.vm.network "private_network", ip: $VM_IP
+
+  # Port forwarding (optionnel)
+  # config.vm.network "forwarded_port", guest: 8080, host: 8080   # Jenkins
+  # config.vm.network "forwarded_port", guest: 9000, host: 9000   # SonarQube
+  # config.vm.network "forwarded_port", guest: 3000, host: 3000   # Grafana
+
+  # ==========================================================
+  # 3. PROVIDER VIRTUALBOX
+  # ==========================================================
+
+  config.vm.provider "virtualbox" do |vb|
+    # Ressources
+    vb.memory = $VM_MEMORY
+    vb.cpus = $VM_CPUS
+    vb.name = $VM_NAME
+
+    # Optimisations (optionnel)
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+    vb.customize ["modifyvm", :id, "--ioapic", "on"]
+
+    # ❗ Support Hyper-V (si activé sur Windows)
+    # vb.customize ["modifyvm", :id, "--paravirtprovider", "hyperv"]
+  end
+
+  # ==========================================================
+  # 4. PROVIDER HYPER-V (optionnel)
+  # ==========================================================
+
+  config.vm.provider "hyperv" do |hv|
+    hv.memory = $VM_MEMORY
+    hv.cpus = $VM_CPUS
+    hv.vmname = $VM_NAME
+    hv.enable_enhanced_session_mode = true
+  end
+
+  # ==========================================================
+  # 5. DOSSIEURS SYNCHRONISÉS
+  # ==========================================================
+
+  config.vm.synced_folder ".", "/vagrant"
+  # config.vm.synced_folder "./projects", "/home/vagrant/projects"
+
+  # ==========================================================
+  # 6. PROVISIONNEMENT - À ADAPTER
+  # ==========================================================
+
+  # Provisionnement via script inline
+  config.vm.provision "shell", privileged: false, inline: <<-SHELL
+    #!/bin/bash
+
+    echo "========================================="
+    echo "🚀 PROVISIONNEMENT DE LA VM"
+    echo "========================================="
+
+    # Mise à jour du système
+    sudo apt-get update -y
+    sudo apt-get upgrade -y
+
+    # Installation de Docker
+    echo "🐳 Installation de Docker..."
+    sudo apt-get install -y docker.io
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -aG docker vagrant
+
+    # Installation de Java (optionnel)
+    # echo "☕ Installation de Java..."
+    # sudo apt-get install -y openjdk-17-jdk
+
+    echo "========================================="
+    echo "✅ PROVISIONNEMENT TERMINÉ"
+    echo "========================================="
+  SHELL
+
+  # ==========================================================
+  # 7. PROVISIONNEMENT AVEC FICHIER EXTERNE
+  # ==========================================================
+
+  # Décommenter pour utiliser un script externe
+  # config.vm.provision "shell", path: "scripts/install-tools.sh"
+
+  # ==========================================================
+  # 8. PROVISIONNEMENT ANSIBLE (optionnel)
+  # ==========================================================
+
+  # config.vm.provision "ansible" do |ansible|
+  #   ansible.playbook = "playbook.yml"
+  #   ansible.inventory_path = "inventory.ini"
+  #   ansible.verbose = "v"
+  # end
+
+  # ==========================================================
+  # 9. MESSAGES POST-DÉMARRAGE
+  # ==========================================================
+
+  config.vm.post_up_message = <<-MESSAGE
+    ════════════════════════════════════════════════
+    🎉 VM PRÊTE À L'EMPLOI
+    ════════════════════════════════════════════════
+
+    📍 ACCÈS :
+       SSH : vagrant ssh
+       IP  : #{ $VM_IP }
+
+    📚 POUR PERSONNALISER :
+       1. Modifier le Vagrantfile
+       2. Ajuster les variables
+       3. Vagrant reload --provision
+
+    ════════════════════════════════════════════════
+  MESSAGE
+
+end
+
+# ============================================================
+# 📋 FONCTIONS UTILES (optionnelles)
+# ============================================================
+
+# Fonction pour vérifier une commande
+def command_exists(command)
+  `command -v #{command} 2>/dev/null`.strip != ""
+end
+
+# Fonction pour obtenir l'OS hôte
+def host_os
+  case RbConfig::CONFIG['host_os']
+  when /darwin/ then "macOS"
+  when /linux/ then "Linux"
+  when /mingw|mswin|windows/ then "Windows"
+  else "Unknown"
+  end
+end
+
+# ============================================================
+# 📚 DOCUMENTATION DES OPTIONS DISPONIBLES
+# ============================================================
+
+=begin
+
+📖 GUIDE D'ADAPTATION DU Vagrantfile
+
+1. CHOISIR LA BOX :
+   - bento/ubuntu-22.04  (Ubuntu 22.04 LTS - RECOMMANDÉ)
+   - ubuntu/jammy64      (Ubuntu 22.04 officiel)
+   - bento/ubuntu-24.04  (Ubuntu 24.04 LTS)
+   - generic/debian12    (Debian 12)
+
+2. ADAPTER L'IP :
+   - Choisir une IP disponible dans votre réseau
+   - Plages recommandées : 192.168.56.x, 192.168.33.x
+   - Éviter les IP déjà utilisées
+
+3. ADAPTER LES RESSOURCES :
+   - Mémoire : 2048-8192 Mo selon vos besoins
+   - CPU : 1-4 selon votre machine
+
+4. ADAPTER LE PROVISIONNEMENT :
+   - Ajouter ou supprimer des outils
+   - Modifier les scripts selon vos besoins
+
+5. AJOUTER DES SERVICES :
+   - Décommenter les ports forwarding
+   - Ajouter des conteneurs Docker
+
+6. SECURISATION :
+   - ❗ NE JAMAIS METTRE DE SECRETS DANS CE FICHIER
+   - Utiliser des variables d'environnement
+   - Utiliser un fichier .env séparé
+
+7. TESTER :
+   - vagrant up --dry-run  (Vérifier la syntaxe)
+   - vagrant status        (Vérifier l'état)
+
+=end
+
+# ============================================================
+# ✅ FIN DU TEMPLATE
+# ============================================================

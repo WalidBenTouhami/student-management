@@ -1,0 +1,54 @@
+# ============================================================
+# 📉 PROMETHEUS CONFIGURATION
+# ============================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files:
+# - "alerts.yml"
+
+scrape_configs:
+  # ============================================================
+  # JENKINS
+  # ============================================================
+  - job_name: 'jenkins'
+    metrics_path: '/prometheus'
+    static_configs:
+      - targets: ['192.168.56.10:8080']
+
+  # ============================================================
+  # SPRING BOOT APP
+  # ============================================================
+  - job_name: 'spring-app'
+    metrics_path: '/student/actuator/prometheus'
+    static_configs:
+      - targets: ['spring-app:8089']
+
+  # ============================================================
+  # NODE EXPORTER (Système)
+  # ============================================================
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # ============================================================
+  # MYSQL
+  # ============================================================
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysql:3306']
+
+  # ============================================================
+  # SONARQUBE
+  # ============================================================
+  - job_name: 'sonarqube'
+    metrics_path: '/api/metrics'
+    static_configs:
+      - targets: ['sonarqube:9000']
