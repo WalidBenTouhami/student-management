@@ -1,9 +1,7 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'M2_HOME'
-    }
+
 
     environment {
         APP_ENV = "DEV"
@@ -35,7 +33,7 @@ pipeline {
         // ============================================================
         stage('Build') {
             steps {
-                sh 'mvn clean compile'
+                sh 'chmod +x mvnw && ./mvnw clean compile'
             }
         }
 
@@ -44,7 +42,7 @@ pipeline {
         // ============================================================
         stage('Test') {
             steps {
-                sh 'mvn clean test jacoco:report'
+                sh 'chmod +x mvnw && ./mvnw clean test jacoco:report'
             }
             post {
                 always {
@@ -60,7 +58,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
-                        mvn sonar:sonar \
+                        chmod +x mvnw && ./mvnw sonar:sonar \
                             -Dsonar.projectKey=student-management \
                             -Dsonar.projectName="Student Management" \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
@@ -87,7 +85,7 @@ pipeline {
         // ============================================================
         stage('Package') {
             steps {
-                sh 'mvn package -DskipTests'
+                sh 'chmod +x mvnw && ./mvnw package -DskipTests'
             }
             post {
                 success {
