@@ -181,7 +181,7 @@ pipeline {
                     <p><b>Déployé sur:</b> Kubernetes (${K8S_NAMESPACE})</p>
                     <p><b>Application:</b> <a href="http://192.168.56.10:8089/student">http://192.168.56.10:8089/student</a></p>
                 """,
-                    to: 'devops-team@esprit.tn'
+                    to: 'walid.bentouhami@esprit.tn'
             )
         }
         failure {
@@ -195,7 +195,7 @@ pipeline {
                     <p><b>Erreur:</b> ${env.ERROR_MESSAGE}</p>
                     <p><b>Voir les logs:</b> ${env.BUILD_URL}/console</p>
                 """,
-                    to: 'devops-team@esprit.tn'
+                    to: 'walid.bentouhami@esprit.tn'
             )
         }
         always {
