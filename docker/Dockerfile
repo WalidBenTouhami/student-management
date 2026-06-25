@@ -3,7 +3,7 @@
 # ============================================================
 
 # Image de base Java 25
-FROM openjdk:25-slim
+FROM eclipse-temurin:21-jre-jammy
 
 # Labels pour identification
 LABEL maintainer="devops@esprit.tn"

@@ -1,0 +1,30 @@
+# ============================================================
+# 🐳 DOCKERFILE - STUDENT MANAGEMENT (DEV)
+# ============================================================
+
+# Image de base avec Maven pour le développement
+FROM maven:3.9.9-eclipse-temurin-25
+
+# Labels
+LABEL maintainer="devops@esprit.tn"
+LABEL version="1.0.0-dev"
+LABEL description="Student Management Application - Dev"
+
+# Variables
+ENV APP_HOME=/app
+
+# Création du répertoire
+WORKDIR ${APP_HOME}
+
+# Copie des fichiers POM
+COPY pom.xml .
+COPY src ./src
+
+# Compilation avec Maven
+RUN mvn clean compile
+
+# Exposition du port
+EXPOSE 8089
+
+# Point d'entrée pour le développement (hot reload)
+ENTRYPOINT ["mvn", "spring-boot:run"]

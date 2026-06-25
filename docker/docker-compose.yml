@@ -69,7 +69,7 @@ services:
   # 📊 SONARQUBE - Qualité de Code
   # ============================================================
   sonarqube:
-    image: sonarqube:25.4.0
+    image: sonarqube:lts-community
     container_name: student-sonarqube
     restart: unless-stopped
     environment:

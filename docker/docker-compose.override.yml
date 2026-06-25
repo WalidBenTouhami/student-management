@@ -1,0 +1,28 @@
+# ============================================================
+# 🐳 DOCKER COMPOSE OVERRIDE - DEV
+# ============================================================
+
+version: '3.8'
+
+services:
+  spring-app:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_JPA_SHOW_SQL: "true"
+      LOGGING_LEVEL_ROOT: DEBUG
+      JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    volumes:
+      - ../src:/app/src
+      - ../target:/app/target
+    command: mvn spring-boot:run
+    ports:
+      - "8089:8089"
+      - "5005:5005"
+
+  mysql:
+    ports:
+      - "3307:3306"
+
+volumes:
+  mysql_data:
+    name: devops-mysql-data-dev

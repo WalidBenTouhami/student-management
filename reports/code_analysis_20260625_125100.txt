@@ -1,0 +1,112 @@
+╔═══════════════════════════════════════════════════════════════╗
+║  🔍 RAPPORT D'ANALYSE DU CODE SOURCE                         ║
+║  Projet: Student Management                                  ║
+║  Date: Thu Jun 25 12:51:00     2026                                              ║
+║  Fichier: code_analysis_20260625_125100.txt                        ║
+╚═══════════════════════════════════════════════════════════════╝
+
+============================================================
+📄 FICHIERS DE PROPRIÉTÉS
+============================================================
+
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/.mvn/wrapper/maven-wrapper.properties OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/resources/application.properties OK
+============================================================
+📄 FICHIERS YAML
+============================================================
+
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/docker/docker-compose.override.yml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/docker/docker-compose.yml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/docker/grafana/provisioning/dashboards/dashboard.yml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/docker/grafana/provisioning/datasources/datasource.yml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/docker/prometheus/prometheus.yml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/k8s/deployment.yaml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/k8s/mysql-deployment.yaml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/k8s/mysql-service.yaml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/k8s/namespace.yaml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/k8s/secrets.yaml OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/k8s/service.yaml OK
+============================================================
+📄 FICHIERS JSON
+============================================================
+
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/docker/grafana/dashboards/jenkins/jenkins.json OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/docker/grafana/dashboards/kubernetes/kubernetes.json OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/docker/grafana/dashboards/spring-boot/spring-boot.json OK
+============================================================
+☕ CODE JAVA
+============================================================
+
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/student/StudentManagementApplication.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/controllers/DepartmentController.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/controllers/EnrollmentController.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/controllers/StudentController.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/entities/Course.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/entities/Department.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/entities/Enrollment.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/entities/Status.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/entities/Student.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/repositories/CourseRepository.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/repositories/DepartmentRepository.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/repositories/EnrollmentRepository.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/repositories/StudentRepository.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/services/DepartmentService.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/services/EnrollmentService.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/services/IDepartmentService.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/services/IEnrollment.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/services/IStudentService.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/services/StudentService.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/main/java/tn/esprit/studentmanagement/StudentManagementApplication.java OK
+✅ /d/ESPRIT_3/16. OK
+✅ Devops/Cours/student-management/src/test/java/tn/esprit/studentmanagement/StudentManagementApplicationTests.java OK
+============================================================
+🔐 VARIABLES D'ENVIRONNEMENT
+============================================================
+
+⚠️ Variables vides dans /d/ESPRIT_3/16. Devops/Cours/student-management/.env.example :
+SPRING_DATASOURCE_PASSWORD=change_me
+MYSQL_PASSWORD=change_me
+JENKINS_PASSWORD=change_me
+JENKINS_API_TOKEN=change_me
+SONAR_PASSWORD=change_me
+SONAR_TOKEN=change_me
+DOCKER_USERNAME=change_me
+DOCKER_PASSWORD=change_me
+DOCKER_EMAIL=change_me@example.com
+GRAFANA_PASSWORD=change_me
