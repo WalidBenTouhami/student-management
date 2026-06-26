@@ -110,6 +110,20 @@ pipeline {
         }
 
         // ============================================================
+        // 7.5 SECURITE: VULNERABILITY SCAN (TRIVY)
+        // ============================================================
+        stage('Trivy Security Scan') {
+            steps {
+                script {
+                    sh """
+                        eval \$(minikube -p minikube docker-env)
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --no-progress --ignore-unfixed ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    """
+                }
+            }
+        }
+
+        // ============================================================
         // 8. DEPLOY SUR KUBERNETES
         // ============================================================
         stage('Deploy to Kubernetes') {
