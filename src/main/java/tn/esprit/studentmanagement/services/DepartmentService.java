@@ -20,7 +20,7 @@ public class DepartmentService implements IDepartmentService {
 
     @Override
     public Department getDepartmentById(Long idDepartment) {
-        return departmentRepository.findById(java.util.Objects.requireNonNull(idDepartment)).get();
+        return departmentRepository.findById(java.util.Objects.requireNonNull(idDepartment)).orElse(null);
     }
 
     @Override
