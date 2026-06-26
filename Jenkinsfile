@@ -95,43 +95,29 @@ pipeline {
         }
 
         // ============================================================
-        // 7. BUILD DOCKER IMAGE
+        // 7. BUILD DOCKER IMAGE & LOAD
         // ============================================================
-        stage('Docker Build') {
+        stage('Docker Build & Load') {
             steps {
                 script {
                     sh """
                         docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} -f docker/Dockerfile .
                         docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                        minikube image load ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        minikube image load ${DOCKER_IMAGE}:latest
                     """
                 }
             }
         }
 
         // ============================================================
-        // 8. PUSH DOCKER IMAGE
-        // ============================================================
-        stage('Docker Push') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKER_PASSWORD')]) {
-                        sh """
-                            echo ${DOCKER_PASSWORD} | docker login -u esprit --password-stdin
-                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                            docker push ${DOCKER_IMAGE}:latest
-                        """
-                    }
-                }
-            }
-        }
-
-        // ============================================================
-        // 9. DEPLOY SUR KUBERNETES
+        // 8. DEPLOY SUR KUBERNETES
         // ============================================================
         stage('Deploy to Kubernetes') {
             steps {
                 script {
                     sh """
+                        kubectl apply -f k8s/ -n ${K8S_NAMESPACE}
                         kubectl set image deployment/spring-app spring-app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${K8S_NAMESPACE}
                         kubectl rollout status deployment/spring-app -n ${K8S_NAMESPACE}
                     """

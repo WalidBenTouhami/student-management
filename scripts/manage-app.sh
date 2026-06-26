@@ -66,6 +66,9 @@ kill_orphaned() {
 start() {
     cd "$PROJECT_DIR" || { log_error "Projet introuvable"; exit 1; }
 
+    log_warn "⚠️ L'application est maintenant configurée pour tourner sur Kubernetes (Minikube)."
+    log_warn "Le démarrage natif est utilisé comme secours de développement."
+
     # Nettoyer les orphelins avant le démarrage
     kill_orphaned
 
