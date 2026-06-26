@@ -1,0 +1,6 @@
+image:
+  repository: esprit/student-management
+  tag: latest
+  pullPolicy: IfNotPresent
+
+namespace: devops-tools

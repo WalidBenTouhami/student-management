@@ -28,8 +28,8 @@ spec:
     spec:
       containers:
         - name: spring-app
-          image: esprit/student-management:latest
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 8089
               name: http

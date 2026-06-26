@@ -124,14 +124,24 @@ pipeline {
         }
 
         // ============================================================
-        // 8. DEPLOY SUR KUBERNETES
+        // 8. DEPLOY SUR KUBERNETES (VIA HELM)
         // ============================================================
         stage('Deploy to Kubernetes') {
             steps {
                 script {
                     sh """
-                        kubectl apply -f k8s/ -n ${K8S_NAMESPACE}
-                        kubectl set image deployment/spring-app spring-app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${K8S_NAMESPACE}
+                        # Assurez-vous que le namespace existe
+                        kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                        
+                        # Nettoyer l'ancien déploiement k8s brut
+                        kubectl delete -f k8s/ -n ${K8S_NAMESPACE} --ignore-not-found=true
+                        
+                        # Déploiement avec Helm
+                        helm upgrade --install student-management ./helm/student-management \\
+                            --namespace ${K8S_NAMESPACE} \\
+                            --set image.tag=${DOCKER_TAG}
+                        
+                        # Attente du déploiement
                         kubectl rollout status deployment/spring-app -n ${K8S_NAMESPACE}
                     """
                 }
@@ -145,7 +155,9 @@ pipeline {
             steps {
                 sh '''
                     sleep 10
-                    curl -f http://192.168.56.10:8089/student/actuator/health || exit 1
+                    # Test via Minikube IP et NodePort
+                    MINIKUBE_IP=$(minikube ip)
+                    curl -f http://${MINIKUBE_IP}:30080/student/actuator/health || exit 1
                 '''
             }
         }
