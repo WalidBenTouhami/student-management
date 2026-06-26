@@ -19,7 +19,7 @@ public class EnrollmentService implements IEnrollment {
 
     @Override
     public Enrollment getEnrollmentById(Long idEnrollment) {
-        return enrollmentRepository.findById(java.util.Objects.requireNonNull(idEnrollment)).get();
+        return enrollmentRepository.findById(java.util.Objects.requireNonNull(idEnrollment)).orElse(null);
     }
 
     @Override
