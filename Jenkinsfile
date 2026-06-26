@@ -6,7 +6,7 @@ pipeline {
     environment {
         APP_ENV = "DEV"
         DOCKER_REGISTRY = "docker.io"
-        DOCKER_IMAGE = "${DOCKER_REGISTRY}/esprit/student-management"
+        DOCKER_IMAGE = "esprit/student-management"
         DOCKER_TAG = "${env.BUILD_ID}"
         K8S_NAMESPACE = "devops-tools"
         SONAR_HOST_URL = "http://192.168.56.10:9000"
@@ -95,16 +95,15 @@ pipeline {
         }
 
         // ============================================================
-        // 7. BUILD DOCKER IMAGE & LOAD
+        // 7. BUILD DOCKER IMAGE (DIRECTLY IN MINIKUBE)
         // ============================================================
-        stage('Docker Build & Load') {
+        stage('Docker Build') {
             steps {
                 script {
                     sh """
+                        eval \$(minikube -p minikube docker-env)
                         docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} -f docker/Dockerfile .
                         docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                        minikube image load ${DOCKER_IMAGE}:${DOCKER_TAG}
-                        minikube image load ${DOCKER_IMAGE}:latest
                     """
                 }
             }
