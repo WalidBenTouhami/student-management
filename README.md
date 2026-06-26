@@ -44,11 +44,41 @@ docker-compose -f docker/docker-compose.yml up -d
 ```
 L'API sera disponible sur : `http://localhost:8089/student`
 
-### Option 3 : En local (Maven)
+### Option 3 : En local (via le gestionnaire)
 Assurez-vous d'avoir configuré une base de données MySQL (`studentdb`, `spring`/`spring123`).
+
+Utilisez notre gestionnaire pour démarrer l'application proprement en arrière-plan :
 ```bash
-mvn clean install
-mvn spring-boot:run
+./scripts/manage-app.sh start
+```
+
+---
+
+## 🚀 Gestion de l'Application
+
+### Démarrer l'application
+```bash
+./scripts/manage-app.sh start
+```
+
+### Arrêter l'application
+```bash
+./scripts/manage-app.sh stop
+```
+
+### Voir le statut
+```bash
+./scripts/manage-app.sh status
+```
+
+### Voir les logs
+```bash
+./scripts/manage-app.sh logs
+```
+
+### Nettoyer les processus orphelins
+```bash
+./scripts/manage-app.sh clean
 ```
 
 ---
