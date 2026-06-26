@@ -15,6 +15,18 @@ spec:
       labels:
         app: grafana
     spec:
+      initContainers:
+        - name: download-dashboards
+          image: curlimages/curl:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              curl -s https://grafana.com/api/dashboards/11378/revisions/1/download > /var/lib/grafana/dashboards/springboot.json
+              curl -s https://grafana.com/api/dashboards/7362/revisions/5/download > /var/lib/grafana/dashboards/mysql.json
+              curl -s https://grafana.com/api/dashboards/14282/revisions/1/download > /var/lib/grafana/dashboards/cadvisor.json
+          volumeMounts:
+            - name: grafana-dashboards
+              mountPath: /var/lib/grafana/dashboards
       containers:
         - name: grafana
           image: grafana/grafana:latest
@@ -22,9 +34,14 @@ spec:
           ports:
             - containerPort: 3000
           volumeMounts:
-            - name: grafana-datasources
+            - name: grafana-config
               mountPath: /etc/grafana/provisioning/datasources/datasources.yaml
               subPath: datasources.yaml
+            - name: grafana-config
+              mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml
+              subPath: dashboards.yaml
+            - name: grafana-dashboards
+              mountPath: /var/lib/grafana/dashboards
           resources:
             requests:
               memory: "128Mi"
@@ -33,9 +50,11 @@ spec:
               memory: "256Mi"
               cpu: "250m"
       volumes:
-        - name: grafana-datasources
+        - name: grafana-config
           configMap:
             name: grafana-config
+        - name: grafana-dashboards
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

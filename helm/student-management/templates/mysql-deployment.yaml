@@ -54,6 +54,24 @@ spec:
             requests:
               memory: "256Mi"
               cpu: "250m"
+        - name: mysqld-exporter
+          image: prom/mysqld-exporter:v0.15.1
+          ports:
+            - containerPort: 9104
+              name: metrics
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SPRING_DATASOURCE_PASSWORD
+            - name: DATA_SOURCE_NAME
+              value: "$(DB_USER):$(DB_PASS)@(localhost:3306)/"
       volumes:
         - name: mysql-storage
           persistentVolumeClaim:
