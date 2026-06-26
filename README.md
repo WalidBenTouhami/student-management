@@ -107,6 +107,7 @@ Si vous ne souhaitez pas utiliser Kubernetes, vous pouvez utiliser notre gestion
 - `k8s/` : Manifestes de déploiement Kubernetes (Deployments, Services, PVC).
 - `scripts/` : Scripts bash d'utilitaires :
   - `install-k8s.sh` : Installe et configure Minikube pour Jenkins.
+  - `k8s-expose.sh` : Expose automatiquement un service K8s sur le premier port libre.
   - `manage-app.sh` : Gestionnaire local de secours de l'application Spring Boot.
 - `Jenkinsfile` : Pipeline CI/CD automatisé de bout en bout.
 - `Vagrantfile` : Infrastructure as Code de l'environnement de développement.
