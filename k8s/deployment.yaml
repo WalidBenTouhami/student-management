@@ -29,7 +29,7 @@ spec:
       containers:
         - name: spring-app
           image: esprit/student-management:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8089
               name: http
