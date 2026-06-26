@@ -18,6 +18,15 @@ echo "🚀 Démarrage de Minikube avec le driver Docker..."
 # Important: On le lance en tant que vagrant pour ne pas casser les permissions si lancé avec sudo
 sudo -u vagrant minikube start --driver=docker --cpus=2 --memory=4096
 
+echo "🔌 Activation de l'Ingress Controller Minikube..."
+sudo -u vagrant minikube addons enable ingress
+
+echo "📦 Installation de Helm..."
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+rm get_helm.sh
+
 echo "⚙️  Configuration des permissions pour Jenkins..."
 # Jenkins doit pouvoir exécuter kubectl et minikube
 sudo usermod -aG docker jenkins || true

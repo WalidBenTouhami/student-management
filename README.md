@@ -19,24 +19,27 @@ graph TD
     GitHub -->|2. Webhook| Jenkins(Jenkins CI/CD)
     
     subgraph Vagrant VM [Vagrant VM - 192.168.56.10]
-        Jenkins -->|3. Maven Build & Sonar Analysis| SonarQube(SonarQube)
-        Jenkins -->|4. Docker Build inside Minikube| Minikube((Minikube K8s Cluster))
-        Jenkins -->|5. kubectl apply| Minikube
+        Jenkins -->|3. Maven Build & Sonar| SonarQube(SonarQube)
+        Jenkins -->|4. Docker Build & Trivy Scan| Minikube((Minikube K8s Cluster))
+        Jenkins -->|5. helm upgrade| Minikube
         
         subgraph Minikube Cluster [Cluster Minikube]
+            Ingress(NGINX Ingress)
             AppPod(Spring Boot Pod)
             DBPod[(MySQL Pod & PVC)]
             PrometheusPod(Prometheus Pod)
             GrafanaPod(Grafana Pod)
             
+            Ingress -->|api.student.local| AppPod
+            Ingress -->|grafana.student.local| GrafanaPod
             AppPod --> DBPod
             PrometheusPod -.->|6. Scrape Metrics| AppPod
             GrafanaPod -->|7. Read Metrics| PrometheusPod
         end
     end
     
-    User -->|8. Accès API & Swagger| AppPod
-    User -->|9. Accès Dashboards| GrafanaPod
+    User -->|8. Accès API & Swagger| Ingress
+    User -->|9. Accès Dashboards| Ingress
 ```
 
 ---
@@ -53,10 +56,11 @@ graph TD
 - **Langage** : Java 25 LTS
 - **Framework** : Spring Boot
 - **Base de données** : MySQL 8.0
-- **DevOps** :
-  - **CI/CD** : Jenkins (Pipeline as Code via `Jenkinsfile`)
-  - **Orchestration** : Kubernetes (Minikube local)
-  - **Analyse de Qualité** : SonarQube avec couverture JaCoCo
+- **DevOps & SecOps** :
+  - **CI/CD** : Jenkins (Pipeline as Code)
+  - **Orchestration** : Kubernetes (Minikube) & Helm (Package Manager)
+  - **Ingress Routing** : NGINX Ingress Controller
+  - **Qualité & Sécurité** : SonarQube (SAST), Trivy (Container Scanning)
   - **Monitoring** : Prometheus & Grafana
   - **Environnement Virtuel** : Vagrant (Ubuntu 22.04 LTS)
 
@@ -92,11 +96,11 @@ Si vous ne souhaitez pas utiliser Kubernetes, vous pouvez utiliser notre gestion
 
 | Service | URL | Identifiants par défaut |
 |---|---|---|
-| **Spring Boot API (via K8s)** | `minikube service spring-service -n devops-tools --url` | N/A |
-| **Swagger UI (Documentation)** | `[URL_SPRING_BOOT]/swagger-ui.html` | N/A |
+| **Spring Boot API** | `http://api.student.local` (via Ingress) | N/A |
+| **Swagger UI** | `http://api.student.local/student/swagger-ui.html` | N/A |
 | **Jenkins** | `http://192.168.56.10:8080` | Voir logs Vagrant |
 | **SonarQube** | `http://192.168.56.10:9000` | `admin` / `admin` |
-| **Grafana** | `http://192.168.56.10:30300` (NodePort K8s) | `admin` / `admin` |
+| **Grafana** | `http://grafana.student.local` (via Ingress) | `admin` / `admin` |
 | **Prometheus** | `http://192.168.56.10:30090` (NodePort K8s) | N/A |
 
 ---
@@ -104,7 +108,7 @@ Si vous ne souhaitez pas utiliser Kubernetes, vous pouvez utiliser notre gestion
 ## 📁 Architecture du Dépôt
 - `src/` : Code source Java.
 - `docker/` : Dockerfiles, configuration Compose (infra monitoring & CI).
-- `k8s/` : Manifestes de déploiement Kubernetes (Deployments, Services, PVC).
+- `helm/student-management/` : Chart Helm contenant toute l'infrastructure dynamique (Deployments, Services, Ingress, PVC, ConfigMaps).
 - `scripts/` : Scripts bash d'utilitaires :
   - `install-k8s.sh` : Installe et configure Minikube pour Jenkins.
   - `k8s-expose.sh` : Expose automatiquement un service K8s sur le premier port libre.
