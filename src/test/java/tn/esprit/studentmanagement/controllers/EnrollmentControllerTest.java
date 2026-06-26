@@ -44,7 +44,7 @@ class EnrollmentControllerTest {
         e1.setIdEnrollment(1L);
         when(enrollmentService.getAllEnrollments()).thenReturn(Arrays.asList(e1));
 
-        mockMvc.perform(get("/enrollments/getAllEnrollments"))
+        mockMvc.perform(get("/Enrollment/getAllEnrollment"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idEnrollment").value(1));
 
@@ -57,7 +57,7 @@ class EnrollmentControllerTest {
         e1.setIdEnrollment(1L);
         when(enrollmentService.getEnrollmentById(1L)).thenReturn(e1);
 
-        mockMvc.perform(get("/enrollments/getEnrollment/1"))
+        mockMvc.perform(get("/Enrollment/getEnrollment/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idEnrollment").value(1));
 
@@ -70,7 +70,7 @@ class EnrollmentControllerTest {
         e1.setGrade(15.5);
         when(enrollmentService.saveEnrollment(any(Enrollment.class))).thenReturn(e1);
 
-        mockMvc.perform(post("/enrollments/createEnrollment")
+        mockMvc.perform(post("/Enrollment/createEnrollment")
                 .contentType(java.util.Objects.requireNonNull(MediaType.APPLICATION_JSON))
                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(e1))))
                 .andExpect(status().isOk())
@@ -85,7 +85,7 @@ class EnrollmentControllerTest {
         e1.setGrade(15.5);
         when(enrollmentService.saveEnrollment(any(Enrollment.class))).thenReturn(e1);
 
-        mockMvc.perform(put("/enrollments/updateEnrollment")
+        mockMvc.perform(put("/Enrollment/updateEnrollment")
                 .contentType(java.util.Objects.requireNonNull(MediaType.APPLICATION_JSON))
                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(e1))))
                 .andExpect(status().isOk())
@@ -98,7 +98,7 @@ class EnrollmentControllerTest {
     void testDeleteEnrollment() throws Exception {
         doNothing().when(enrollmentService).deleteEnrollment(anyLong());
 
-        mockMvc.perform(delete("/enrollments/deleteEnrollment/1"))
+        mockMvc.perform(delete("/Enrollment/deleteEnrollment/1"))
                 .andExpect(status().isOk());
 
         verify(enrollmentService, times(1)).deleteEnrollment(1L);

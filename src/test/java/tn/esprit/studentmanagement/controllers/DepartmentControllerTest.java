@@ -44,7 +44,7 @@ class DepartmentControllerTest {
         d1.setIdDepartment(1L);
         when(departmentService.getAllDepartments()).thenReturn(Arrays.asList(d1));
 
-        mockMvc.perform(get("/departments/getAllDepartments"))
+        mockMvc.perform(get("/Depatment/getAllDepartment"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idDepartment").value(1));
 
@@ -57,7 +57,7 @@ class DepartmentControllerTest {
         d1.setIdDepartment(1L);
         when(departmentService.getDepartmentById(1L)).thenReturn(d1);
 
-        mockMvc.perform(get("/departments/getDepartment/1"))
+        mockMvc.perform(get("/Depatment/getDepartment/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idDepartment").value(1));
 
@@ -70,7 +70,7 @@ class DepartmentControllerTest {
         d1.setName("Math");
         when(departmentService.saveDepartment(any(Department.class))).thenReturn(d1);
 
-        mockMvc.perform(post("/departments/createDepartment")
+        mockMvc.perform(post("/Depatment/createDepartment")
                 .contentType(java.util.Objects.requireNonNull(MediaType.APPLICATION_JSON))
                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(d1))))
                 .andExpect(status().isOk())
@@ -85,7 +85,7 @@ class DepartmentControllerTest {
         d1.setName("Math");
         when(departmentService.saveDepartment(any(Department.class))).thenReturn(d1);
 
-        mockMvc.perform(put("/departments/updateDepartment")
+        mockMvc.perform(put("/Depatment/updateDepartment")
                 .contentType(java.util.Objects.requireNonNull(MediaType.APPLICATION_JSON))
                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(d1))))
                 .andExpect(status().isOk())
@@ -98,7 +98,7 @@ class DepartmentControllerTest {
     void testDeleteDepartment() throws Exception {
         doNothing().when(departmentService).deleteDepartment(anyLong());
 
-        mockMvc.perform(delete("/departments/deleteDepartment/1"))
+        mockMvc.perform(delete("/Depatment/deleteDepartment/1"))
                 .andExpect(status().isOk());
 
         verify(departmentService, times(1)).deleteDepartment(1L);
