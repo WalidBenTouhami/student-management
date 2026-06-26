@@ -142,9 +142,9 @@ pipeline {
         stage('Monitoring') {
             steps {
                 sh '''
-                    # Déployer Prometheus et Grafana si nécessaire
-                    kubectl apply -f docker/prometheus/prometheus.yml -n ${K8S_NAMESPACE} || true
-                    kubectl apply -f docker/grafana/ -n ${K8S_NAMESPACE} || true
+                    # Les manifestes Prometheus et Grafana sont appliqués via le dossier k8s/
+                    kubectl rollout status deployment/prometheus -n ${K8S_NAMESPACE}
+                    kubectl rollout status deployment/grafana -n ${K8S_NAMESPACE}
                 '''
             }
         }

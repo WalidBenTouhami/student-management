@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: devops-tools
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+      # ============================================================
+      # JENKINS
+      # ============================================================
+      - job_name: 'jenkins'
+        metrics_path: '/prometheus/'
+        static_configs:
+          - targets: ['192.168.56.10:8080']
+
+      # ============================================================
+      # SPRING BOOT APP (Sur K8s)
+      # ============================================================
+      - job_name: 'spring-app'
+        metrics_path: '/student/actuator/prometheus'
+        static_configs:
+          - targets: ['spring-service:8089']
+
+      # ============================================================
+      # MYSQL
+      # ============================================================
+      - job_name: 'mysql'
+        static_configs:
+          - targets: ['mysql-service:3306']
+
+      # ============================================================
+      # SONARQUBE
+      # ============================================================
+      - job_name: 'sonarqube'
+        metrics_path: '/api/metrics'
+        static_configs:
+          - targets: ['192.168.56.10:9000']
