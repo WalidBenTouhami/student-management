@@ -26,7 +26,8 @@ graph TD
         subgraph Minikube Cluster [Cluster Minikube]
             Ingress(NGINX Ingress)
             AppPod(Spring Boot Pod)
-            DBPod[(MySQL Pod & PVC)]
+            DBPod[(MySQL Pod + mysqld-exporter)]
+            cAdvisor(cAdvisor DaemonSet)
             PrometheusPod(Prometheus Pod)
             GrafanaPod(Grafana Pod)
             
@@ -34,6 +35,8 @@ graph TD
             Ingress -->|grafana.student.local| GrafanaPod
             AppPod --> DBPod
             PrometheusPod -.->|6. Scrape Metrics| AppPod
+            PrometheusPod -.->|Scrape Metrics| DBPod
+            PrometheusPod -.->|Scrape Metrics| cAdvisor
             GrafanaPod -->|7. Read Metrics| PrometheusPod
         end
     end
@@ -61,7 +64,7 @@ graph TD
   - **Orchestration** : Kubernetes (Minikube) & Helm (Package Manager)
   - **Ingress Routing** : NGINX Ingress Controller
   - **Qualité & Sécurité** : SonarQube (SAST), Trivy (Container Scanning)
-  - **Monitoring** : Prometheus & Grafana
+  - **Monitoring** : Prometheus & Grafana (avec cAdvisor & mysqld-exporter)
   - **Environnement Virtuel** : Vagrant (Ubuntu 22.04 LTS)
 
 ---
@@ -109,9 +112,11 @@ Si vous ne souhaitez pas utiliser Kubernetes, vous pouvez utiliser notre gestion
 - `src/` : Code source Java.
 - `docker/` : Dockerfiles, configuration Compose (infra monitoring & CI).
 - `helm/student-management/` : Chart Helm contenant toute l'infrastructure dynamique (Deployments, Services, Ingress, PVC, ConfigMaps).
-- `scripts/` : Scripts bash d'utilitaires :
+- `scripts/` : Scripts bash & Windows d'utilitaires :
   - `install-k8s.sh` : Installe et configure Minikube pour Jenkins.
-  - `k8s-expose.sh` : Expose automatiquement un service K8s sur le premier port libre.
+  - `ingress-tunnel.sh` : Ouvre automatiquement le tunnel Ingress sur K8s vers le port 80.
+  - `open-dashboards.bat` : Script Windows (double-clic) pour ouvrir tous les URLs du projet dans le navigateur.
+  - `k8s-expose.sh` : Expose manuellement un service K8s sur un port libre.
   - `manage-app.sh` : Gestionnaire local de secours de l'application Spring Boot.
 - `Jenkinsfile` : Pipeline CI/CD automatisé de bout en bout.
 - `Vagrantfile` : Infrastructure as Code de l'environnement de développement.

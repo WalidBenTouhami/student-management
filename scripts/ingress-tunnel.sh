@@ -20,12 +20,15 @@ done
 echo "✅ Port $PORT disponible ! Ouverture du tunnel Ingress..."
 echo "=========================================================="
 if [ "$PORT" -eq 80 ]; then
-    echo "🌐 Swagger : http://api.student.local/student/swagger-ui.html"
-    echo "📈 Grafana : http://grafana.student.local"
+    echo "🌐 Swagger   : http://api.student.local/student/swagger-ui.html"
+    echo "📈 Grafana   : http://grafana.student.local"
 else
-    echo "🌐 Swagger : http://api.student.local:$PORT/student/swagger-ui.html"
-    echo "📈 Grafana : http://grafana.student.local:$PORT"
+    echo "🌐 Swagger   : http://api.student.local:$PORT/student/swagger-ui.html"
+    echo "📈 Grafana   : http://grafana.student.local:$PORT"
 fi
+echo "🚀 Jenkins   : http://192.168.56.10:8080"
+echo "🔍 SonarQube : http://192.168.56.10:9000"
+echo "📊 Prometheus: http://192.168.56.10:30090"
 echo "=========================================================="
 echo "⚠️  GARDEZ CE TERMINAL OUVERT ⚠️"
 
