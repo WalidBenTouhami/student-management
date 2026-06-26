@@ -1,4 +1,9 @@
 # 🎓 Student Management System
+![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD_Automated-blue?logo=jenkins)
+![SonarQube](https://img.shields.io/badge/SonarQube-Quality_Gate_Passed-success?logo=sonarqube)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-Deployed-326ce5?logo=kubernetes)
+![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.16-6DB33F?logo=spring)
 -----------------------------------
 Bienvenue sur le projet **Student Management**, une application robuste développée avec **Spring Boot (Java 25 LTS)**, intégrant un environnement de développement et de déploiement DevOps complet.
 
@@ -10,26 +15,28 @@ L'infrastructure du projet est entièrement conteneurisée et automatisée. Le p
 
 ```mermaid
 graph TD
-    User([Développeur / Utilisateur]) -->|Git Push| GitHub(Dépôt GitHub)
-    GitHub -->|Webhook| Jenkins(Jenkins CI/CD)
+    User([Développeur / Utilisateur]) -->|1. Git Push| GitHub(Dépôt GitHub)
+    GitHub -->|2. Webhook| Jenkins(Jenkins CI/CD)
     
     subgraph Vagrant VM [Vagrant VM - 192.168.56.10]
-        Jenkins -->|Maven Build| SonarQube(SonarQube - Code Quality)
-        Jenkins -->|Docker Build & minikube load| Minikube((Minikube K8s Cluster))
-        Jenkins -->|kubectl apply| Minikube
+        Jenkins -->|3. Maven Build & Sonar Analysis| SonarQube(SonarQube)
+        Jenkins -->|4. Docker Build inside Minikube| Minikube((Minikube K8s Cluster))
+        Jenkins -->|5. kubectl apply| Minikube
         
         subgraph Minikube Cluster [Cluster Minikube]
             AppPod(Spring Boot Pod)
             DBPod[(MySQL Pod & PVC)]
+            PrometheusPod(Prometheus Pod)
+            GrafanaPod(Grafana Pod)
+            
             AppPod --> DBPod
+            PrometheusPod -.->|6. Scrape Metrics| AppPod
+            GrafanaPod -->|7. Read Metrics| PrometheusPod
         end
-        
-        Prometheus(Prometheus) -.->|Scrapes metrics| AppPod
-        Grafana(Grafana) -->|Reads metrics| Prometheus
     end
     
-    User -->|Accès API & Swagger| AppPod
-    User -->|Accès Dashboards| Grafana
+    User -->|8. Accès API & Swagger| AppPod
+    User -->|9. Accès Dashboards| GrafanaPod
 ```
 
 ---
@@ -89,8 +96,8 @@ Si vous ne souhaitez pas utiliser Kubernetes, vous pouvez utiliser notre gestion
 | **Swagger UI (Documentation)** | `[URL_SPRING_BOOT]/swagger-ui.html` | N/A |
 | **Jenkins** | `http://192.168.56.10:8080` | Voir logs Vagrant |
 | **SonarQube** | `http://192.168.56.10:9000` | `admin` / `admin` |
-| **Grafana** | `http://192.168.56.10:3000` | `admin` / `admin` |
-| **Prometheus** | `http://192.168.56.10:9090` | N/A |
+| **Grafana** | `http://192.168.56.10:30300` (NodePort K8s) | `admin` / `admin` |
+| **Prometheus** | `http://192.168.56.10:30090` (NodePort K8s) | N/A |
 
 ---
 

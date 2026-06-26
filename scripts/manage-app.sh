@@ -67,7 +67,8 @@ start() {
     cd "$PROJECT_DIR" || { log_error "Projet introuvable"; exit 1; }
 
     log_warn "⚠️ L'application est maintenant configurée pour tourner sur Kubernetes (Minikube)."
-    log_warn "Le démarrage natif est utilisé comme secours de développement."
+    log_warn "Le monitoring complet (Prometheus/Grafana) n'est disponible que sur la version Kubernetes."
+    log_warn "Le démarrage natif est utilisé comme secours de développement local."
 
     # Nettoyer les orphelins avant le démarrage
     kill_orphaned
