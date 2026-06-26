@@ -95,6 +95,27 @@ Si vous ne souhaitez pas utiliser Kubernetes, vous pouvez utiliser notre gestion
 
 ---
 
+## 🎯 Utilisation Quotidienne (Workflow)
+
+Une fois l'application déployée via Jenkins, voici la procédure recommandée pour tester et superviser votre architecture :
+
+1. **Ouvrir le Tunnel K8s (Ingress)**
+   Dans votre terminal Vagrant, lancez ce script pour lier le routeur Kubernetes au port 80 de votre machine :
+   ```bash
+   ./scripts/ingress-tunnel.sh
+   ```
+   *(Gardez ce terminal ouvert en arrière-plan)*
+
+2. **Ouvrir tous les Tableaux de bord (Magie 1-clic)**
+   Sur votre ordinateur **Windows**, naviguez dans le dossier `scripts/` du projet et double-cliquez sur `open-dashboards.bat`. Cela ouvrira instantanément 5 onglets dans votre navigateur par défaut (Swagger, Grafana, Jenkins, SonarQube, Prometheus).
+
+3. **Générer du Trafic et Superviser**
+   - Depuis **Swagger** (`http://api.student.local/student/swagger-ui.html`), exécutez quelques requêtes d'API (ajouter des étudiants).
+   - Allez sur **Grafana** (`http://grafana.student.local`), connectez-vous avec `admin`/`admin`.
+   - Vous trouverez **3 Dashboards auto-importés** (Spring Boot Observability, MySQL Overview, cAdvisor K8s) qui s'animeront en temps réel grâce au trafic généré !
+
+---
+
 ## 📊 URLs de l'Environnement (Vagrant)
 
 | Service | URL | Identifiants par défaut |
