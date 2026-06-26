@@ -10,7 +10,7 @@ set -e
 APP_NAME="student-management"
 APP_PORT=8089
 PID_FILE="/tmp/${APP_NAME}.pid"
-LOG_FILE="/var/log/${APP_NAME}.log"
+LOG_FILE="/tmp/${APP_NAME}.log"
 JAR_FILE="target/${APP_NAME}-*.jar"
 PROJECT_DIR="/vagrant"
 
@@ -76,11 +76,9 @@ start() {
 
     log_info "🚀 Démarrage de l'application $APP_NAME..."
 
-    # Construire le JAR si nécessaire
-    if [ ! -f $(ls -t $JAR_FILE 2>/dev/null | head -1) ]; then
-        log_info "📦 Construction du JAR..."
-        ./mvnw clean package -DskipTests
-    fi
+    # Construire le JAR avec détection des changements
+    log_info "📦 Construction ou mise à jour du JAR..."
+    ./mvnw package -DskipTests
 
     # Lancer l'application en arrière-plan
     nohup java -jar $(ls -t $JAR_FILE | head -1) > "$LOG_FILE" 2>&1 &
