@@ -4,11 +4,41 @@ Bienvenue sur le projet **Student Management**, une application robuste dévelop
 
 ---
 
+## 🚀 Architecture et Fonctionnement du Projet
+
+L'infrastructure du projet est entièrement conteneurisée et automatisée. Le pipeline CI/CD déploie l'application directement dans un cluster Kubernetes local (Minikube) situé à l'intérieur de la machine virtuelle Vagrant.
+
+```mermaid
+graph TD
+    User([Développeur / Utilisateur]) -->|Git Push| GitHub(Dépôt GitHub)
+    GitHub -->|Webhook| Jenkins(Jenkins CI/CD)
+    
+    subgraph Vagrant VM [Vagrant VM - 192.168.56.10]
+        Jenkins -->|Maven Build| SonarQube(SonarQube - Code Quality)
+        Jenkins -->|Docker Build & minikube load| Minikube((Minikube K8s Cluster))
+        Jenkins -->|kubectl apply| Minikube
+        
+        subgraph Minikube Cluster [Cluster Minikube]
+            AppPod(Spring Boot Pod)
+            DBPod[(MySQL Pod & PVC)]
+            AppPod --> DBPod
+        end
+        
+        Prometheus(Prometheus) -.->|Scrapes metrics| AppPod
+        Grafana(Grafana) -->|Reads metrics| Prometheus
+    end
+    
+    User -->|Accès API & Swagger| AppPod
+    User -->|Accès Dashboards| Grafana
+```
+
+---
+
 ## 🚀 Fonctionnalités Principales
 - Gestion des **Étudiants** (Création, lecture, mise à jour, suppression).
 - Gestion des **Départements**.
 - Gestion des **Inscriptions (Enrollments)** aux différents cours.
-- API REST documentée.
+- API REST documentée interactivement avec **Swagger UI**.
 
 ---
 
@@ -18,8 +48,7 @@ Bienvenue sur le projet **Student Management**, une application robuste dévelop
 - **Base de données** : MySQL 8.0
 - **DevOps** :
   - **CI/CD** : Jenkins (Pipeline as Code via `Jenkinsfile`)
-  - **Conteneurisation** : Docker & Docker Compose
-  - **Orchestration** : Kubernetes (Manifests dans le dossier `k8s/`)
+  - **Orchestration** : Kubernetes (Minikube local)
   - **Analyse de Qualité** : SonarQube avec couverture JaCoCo
   - **Monitoring** : Prometheus & Grafana
   - **Environnement Virtuel** : Vagrant (Ubuntu 22.04 LTS)
@@ -28,74 +57,36 @@ Bienvenue sur le projet **Student Management**, une application robuste dévelop
 
 ## ⚙️ Démarrage Rapide
 
-### Option 1 : Environnement Vagrant Complet (DevOps)
-Si vous souhaitez bénéficier de la machine virtuelle complète avec Jenkins, SonarQube et Grafana installés :
+### Option 1 : Déploiement Complet K8s & CI/CD (Recommandé)
+1. Démarrez la machine virtuelle Vagrant :
 ```bash
 vagrant up
 vagrant ssh
 ```
-> [!NOTE]
-> La VM sera disponible à l'adresse **192.168.56.10**.
-
-### Option 2 : Docker Compose (API & BDD)
-Pour démarrer rapidement l'application locale et sa base de données MySQL :
+2. Installez Minikube et Kubectl via le script automatisé :
 ```bash
-docker-compose -f docker/docker-compose.yml up -d
+cd /vagrant
+./scripts/install-k8s.sh
 ```
-L'API sera disponible sur : `http://localhost:8089/student`
+3. Poussez votre code sur GitHub pour déclencher le pipeline Jenkins (ou lancez le build manuellement). Jenkins se chargera de builder, analyser, conteneuriser et déployer l'application sur le cluster Kubernetes local.
 
-### Option 3 : En local (via le gestionnaire)
-Assurez-vous d'avoir configuré une base de données MySQL (`studentdb`, `spring`/`spring123`).
-
-Utilisez notre gestionnaire pour démarrer l'application proprement en arrière-plan :
+### Option 2 : Démarrage Natif de Secours
+Si vous ne souhaitez pas utiliser Kubernetes, vous pouvez utiliser notre gestionnaire bash local. Notez que l'application est prioritairement conçue pour être gérée par K8s.
 ```bash
 ./scripts/manage-app.sh start
-```
-
----
-
-## 🚀 Gestion de l'Application
-
-### Démarrer l'application
-```bash
-./scripts/manage-app.sh start
-```
-
-### Arrêter l'application
-```bash
 ./scripts/manage-app.sh stop
-```
-
-### Voir le statut
-```bash
 ./scripts/manage-app.sh status
-```
-
-### Voir les logs
-```bash
-./scripts/manage-app.sh logs
-```
-
-### Nettoyer les processus orphelins
-```bash
 ./scripts/manage-app.sh clean
 ```
 
 ---
 
-## 🧪 Tests et Qualité de Code
-Les tests unitaires sont couverts avec JUnit 5 et Mockito. Un rapport JaCoCo est généré pour SonarQube.
-Pour exécuter les tests :
-```bash
-mvn clean test jacoco:report
-```
-
----
-
 ## 📊 URLs de l'Environnement (Vagrant)
+
 | Service | URL | Identifiants par défaut |
 |---|---|---|
-| **Spring Boot API** | `http://192.168.56.10:8089/student` | N/A |
+| **Spring Boot API (via K8s)** | `minikube service spring-service -n devops-tools --url` | N/A |
+| **Swagger UI (Documentation)** | `[URL_SPRING_BOOT]/swagger-ui.html` | N/A |
 | **Jenkins** | `http://192.168.56.10:8080` | Voir logs Vagrant |
 | **SonarQube** | `http://192.168.56.10:9000` | `admin` / `admin` |
 | **Grafana** | `http://192.168.56.10:3000` | `admin` / `admin` |
@@ -105,8 +96,10 @@ mvn clean test jacoco:report
 
 ## 📁 Architecture du Dépôt
 - `src/` : Code source Java.
-- `docker/` : Dockerfiles, configuration Compose et Monitoring.
-- `k8s/` : Manifestes de déploiement Kubernetes.
-- `scripts/` : Scripts bash d'utilitaires (Check, Deploy).
-- `Jenkinsfile` : Pipeline CI/CD.
+- `docker/` : Dockerfiles, configuration Compose (infra monitoring & CI).
+- `k8s/` : Manifestes de déploiement Kubernetes (Deployments, Services, PVC).
+- `scripts/` : Scripts bash d'utilitaires :
+  - `install-k8s.sh` : Installe et configure Minikube pour Jenkins.
+  - `manage-app.sh` : Gestionnaire local de secours de l'application Spring Boot.
+- `Jenkinsfile` : Pipeline CI/CD automatisé de bout en bout.
 - `Vagrantfile` : Infrastructure as Code de l'environnement de développement.
