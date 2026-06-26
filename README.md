@@ -1,5 +1,5 @@
 # 🎓 Student Management System
-
+-----------------------------------
 Bienvenue sur le projet **Student Management**, une application robuste développée avec **Spring Boot (Java 25 LTS)**, intégrant un environnement de développement et de déploiement DevOps complet.
 
 ---
