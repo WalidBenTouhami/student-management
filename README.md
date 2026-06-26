@@ -69,50 +69,53 @@ graph TD
 
 ---
 
-## ⚙️ Démarrage Rapide
+## ⚙️ Guide Complet de A à Z (De Vagrant jusqu'aux Dashboards)
 
-### Option 1 : Déploiement Complet K8s & CI/CD (Recommandé)
-1. Démarrez la machine virtuelle Vagrant :
+Voici la procédure intégrale pour lancer, configurer et utiliser le projet depuis zéro :
+
+### Étape 1 : Démarrage de l'infrastructure virtuelle
+Ouvrez un terminal (Git Bash, PowerShell) sur votre machine physique Windows, placez-vous dans le dossier du projet et lancez Vagrant :
 ```bash
 vagrant up
 vagrant ssh
 ```
-2. Installez Minikube et Kubectl via le script automatisé :
+
+### Étape 2 : Préparation de l'environnement K8s (1ère fois uniquement)
+Une fois connecté en SSH sur la machine virtuelle (`vagrant@...`), installez les outils cloud-native :
 ```bash
 cd /vagrant
+# Installation de K8s (Minikube), Helm, Nginx Ingress et démarrage de Jenkins
 ./scripts/install-k8s.sh
 ```
-3. Poussez votre code sur GitHub pour déclencher le pipeline Jenkins (ou lancez le build manuellement). Jenkins se chargera de builder, analyser, conteneuriser et déployer l'application sur le cluster Kubernetes local.
 
-### Option 2 : Démarrage Natif de Secours
-Si vous ne souhaitez pas utiliser Kubernetes, vous pouvez utiliser notre gestionnaire bash local. Notez que l'application est prioritairement conçue pour être gérée par K8s.
+### Étape 3 : Configuration DNS sur Windows (Obligatoire)
+Pour que l'Ingress Kubernetes puisse router le trafic grâce aux URLs élégantes, vous devez indiquer à Windows que ces domaines pointent vers l'IP de Vagrant.
+1. Ouvrez le **Bloc-notes en tant qu'Administrateur** sur Windows.
+2. Ouvrez le fichier : `C:\Windows\System32\drivers\etc\hosts`
+3. Ajoutez cette ligne tout à la fin du fichier, puis sauvegardez :
+   `192.168.56.10 api.student.local grafana.student.local`
+
+### Étape 4 : Déploiement Automatisé via Jenkins (CI/CD)
+1. Tout changement poussé sur GitHub (`git push`) déclenchera automatiquement le pipeline.
+2. (Optionnel) Ouvrez **Jenkins** (`http://192.168.56.10:8080`), et lancez manuellement un "Build Now" sur le job `student-management-pipeline`.
+3. Jenkins va : Compiler le code Java, analyser la qualité (SonarQube), créer l'image Docker, vérifier les failles de sécurité (Trivy), et déployer l'architecture de Microservices et de Monitoring sur Kubernetes via Helm.
+
+### Étape 5 : Ouverture du Routeur (Tunnel Ingress)
+Une fois le déploiement K8s terminé (build Jenkins vert), vous devez ouvrir le port K8s.
+Dans votre terminal Vagrant, exécutez le script intelligent :
 ```bash
-./scripts/manage-app.sh start
-./scripts/manage-app.sh stop
-./scripts/manage-app.sh status
-./scripts/manage-app.sh clean
+./scripts/ingress-tunnel.sh
 ```
+*(⚠️ Gardez impérativement ce terminal ouvert en arrière-plan)*
 
----
+### Étape 6 : Accès et Magie "1-clic"
+Sur votre ordinateur Windows, naviguez dans l'explorateur de fichiers jusqu'au dossier du projet `scripts/`, et double-cliquez sur le fichier **`open-dashboards.bat`**.
+Votre navigateur web s'ouvrira instantanément avec 5 onglets :
+- **Swagger** (Test interactif de l'API).
+- **Grafana** (Dashboards auto-peuplés du CPU, RAM, JVM et MySQL).
+- **Jenkins**, **SonarQube** et **Prometheus**.
 
-## 🎯 Utilisation Quotidienne (Workflow)
-
-Une fois l'application déployée via Jenkins, voici la procédure recommandée pour tester et superviser votre architecture :
-
-1. **Ouvrir le Tunnel K8s (Ingress)**
-   Dans votre terminal Vagrant, lancez ce script pour lier le routeur Kubernetes au port 80 de votre machine :
-   ```bash
-   ./scripts/ingress-tunnel.sh
-   ```
-   *(Gardez ce terminal ouvert en arrière-plan)*
-
-2. **Ouvrir tous les Tableaux de bord (Magie 1-clic)**
-   Sur votre ordinateur **Windows**, naviguez dans le dossier `scripts/` du projet et double-cliquez sur `open-dashboards.bat`. Cela ouvrira instantanément 5 onglets dans votre navigateur par défaut (Swagger, Grafana, Jenkins, SonarQube, Prometheus).
-
-3. **Générer du Trafic et Superviser**
-   - Depuis **Swagger** (`http://api.student.local/student/swagger-ui.html`), exécutez quelques requêtes d'API (ajouter des étudiants).
-   - Allez sur **Grafana** (`http://grafana.student.local`), connectez-vous avec `admin`/`admin`.
-   - Vous trouverez **3 Dashboards auto-importés** (Spring Boot Observability, MySQL Overview, cAdvisor K8s) qui s'animeront en temps réel grâce au trafic généré !
+*(Si vous souhaitez lancer l'application en mode secours sans Kubernetes, utilisez le script `./scripts/manage-app.sh start`).*
 
 ---
 
