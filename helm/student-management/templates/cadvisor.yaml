@@ -14,9 +14,17 @@ spec:
       labels:
         app: cadvisor
     spec:
+      hostNetwork: true
       containers:
       - name: cadvisor
         image: gcr.io/cadvisor/cadvisor:v0.47.2
+        args:
+          - --housekeeping_interval=10s
+          - --max_housekeeping_interval=15s
+          - --store_container_labels=false
+          - --docker_only=true
+        securityContext:
+          privileged: true
         ports:
         - name: http
           containerPort: 8080
@@ -27,7 +35,6 @@ spec:
           readOnly: true
         - name: var-run
           mountPath: /var/run
-          readOnly: true
         - name: sys
           mountPath: /sys
           readOnly: true
