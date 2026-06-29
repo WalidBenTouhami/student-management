@@ -63,7 +63,7 @@ pipeline {
                             -Dsonar.projectName="Student Management" \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
                             -Dsonar.login=admin \
-                            -Dsonar.password=admin \
+                            -Dsonar.password=admin123 \
                             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                     '''
                 }
