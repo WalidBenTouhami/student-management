@@ -11,9 +11,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/Department")
 @CrossOrigin(origins = "http://localhost:4200")
-@AllArgsConstructor
 public class DepartmentController {
     private IDepartmentService departmentService;
+
+    public DepartmentController(IDepartmentService departmentService) {
+        this.departmentService = departmentService;
+    }
 
     @GetMapping("/getAllDepartment")
     public List<Department> getAllDepartment() { return departmentService.getAllDepartments(); }

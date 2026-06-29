@@ -9,9 +9,12 @@ import tn.esprit.studentmanagement.repositories.StudentRepository;
 import java.util.List;
 
 @Service
-@AllArgsConstructor
 public class StudentService implements IStudentService {
     private final StudentRepository studentRepository;
+
+    public StudentService(StudentRepository studentRepository) {
+        this.studentRepository = studentRepository;
+    }
     
     @Override
     public List<Student> getAllStudents() { return studentRepository.findAll(); }

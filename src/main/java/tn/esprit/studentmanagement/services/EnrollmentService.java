@@ -8,9 +8,12 @@ import tn.esprit.studentmanagement.entities.Enrollment;
 import java.util.List;
 
 @Service
-@AllArgsConstructor
 public class EnrollmentService implements IEnrollment {
     private final EnrollmentRepository enrollmentRepository;
+
+    public EnrollmentService(EnrollmentRepository enrollmentRepository) {
+        this.enrollmentRepository = enrollmentRepository;
+    }
 
     @Override
     public List<Enrollment> getAllEnrollments() {

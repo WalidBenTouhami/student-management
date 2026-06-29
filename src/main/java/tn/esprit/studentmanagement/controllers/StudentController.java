@@ -11,9 +11,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/students")
 @CrossOrigin(origins = "http://localhost:4200")
-@AllArgsConstructor
 public class StudentController {
-IStudentService studentService;
+    private IStudentService studentService;
+
+    public StudentController(IStudentService studentService) {
+        this.studentService = studentService;
+    }
 
     @GetMapping("/getAllStudents")
     public List<Student> getAllStudents() { return studentService.getAllStudents(); }
