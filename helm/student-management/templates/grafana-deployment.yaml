@@ -29,7 +29,7 @@ spec:
               mountPath: /var/lib/grafana/dashboards
       containers:
         - name: grafana
-          image: grafana/grafana:latest
+          image: grafana/grafana:10.4.3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
