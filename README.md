@@ -140,3 +140,17 @@ Votre navigateur web s'ouvrira instantanément avec 5 onglets :
   - `manage-app.sh` : Gestionnaire local de secours de l'application Spring Boot.
 - `Jenkinsfile` : Pipeline CI/CD automatisé de bout en bout.
 - `Vagrantfile` : Infrastructure as Code de l'environnement de développement.
+
+---
+
+## 🚧 État Actuel du Projet (Session en cours)
+
+Aujourd'hui, nous avons accompli les tâches suivantes :
+1. **Validation CI/CD** : Le pipeline Jenkins compile, teste (Jacoco) et déploie avec succès l'application sur Minikube via Helm (`helm upgrade`).
+2. **Configuration Réseau K8s** : Les NodePorts pour Grafana (`30300`), Prometheus (`30090`) et SonarQube (`30080`) ont été configurés.
+3. **Ouverture du Pare-feu** : Le pare-feu UFW de la VM a été correctement configuré pour accepter le trafic sur ces ports.
+4. **Proxy Minikube (En attente)** : Un relais réseau (via `socat`) est en cours d'installation pour rendre l'adresse IP interne de Minikube (`192.168.49.2`) accessible depuis l'hôte Windows (`192.168.56.10`). **L'installation a été mise en pause suite à un snapshot (onlinesnapshotting) de VirtualBox figeant la machine virtuelle.**
+
+**Prochaine étape (ce soir)** : 
+- Finaliser l'installation des proxies `socat` natifs dès que la machine virtuelle VirtualBox sortira de son état de snapshot et reprendra son exécution normale.
+- Valider l'accès aux endpoints depuis le navigateur Windows.
