@@ -62,7 +62,8 @@ pipeline {
                             -Dsonar.projectKey=student-management \
                             -Dsonar.projectName="Student Management" \
                             -Dsonar.host.url=${SONAR_HOST_URL} \
-                            -Dsonar.token=${SONAR_AUTH_TOKEN} \
+                            -Dsonar.login=admin \
+                            -Dsonar.password=admin \
                             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
                     '''
                 }
