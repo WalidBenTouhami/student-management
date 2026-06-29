@@ -211,6 +211,16 @@ pipeline {
         }
         always {
             cleanWs()
+            script {
+                sh '''
+                    echo "Nettoyage de l'espace Docker dans Minikube..."
+                    eval $(minikube -p minikube docker-env)
+                    # Supprimer les conteneurs arrêtés, les réseaux inutilisés et les images pendantes
+                    docker system prune -f
+                    # Supprimer les vieilles images de l'application pour libérer de l'espace
+                    docker images "esprit/student-management" -q | tail -n +3 | xargs -r docker rmi -f || true
+                '''
+            }
         }
     }
 }
