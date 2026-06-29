@@ -18,11 +18,11 @@ class EntityCoverageTest {
     @Test
     void testDepartment() {
         Department dept = new Department();
-        dept.setIdDepart(1);
-        dept.setNameDepart("IT");
+        dept.setIdDepartment(1L);
+        dept.setName("IT");
         
-        assertEquals(1, dept.getIdDepart());
-        assertEquals("IT", dept.getNameDepart());
+        assertEquals(1L, dept.getIdDepartment());
+        assertEquals("IT", dept.getName());
     }
 
     @Test
@@ -38,10 +38,10 @@ class EntityCoverageTest {
     @Test
     void testStatusEnum() {
         Status active = Status.valueOf("ACTIVE");
-        Status inactive = Status.valueOf("INACTIVE");
+        Status completed = Status.valueOf("COMPLETED");
         
         assertEquals(Status.ACTIVE, active);
-        assertEquals(Status.INACTIVE, inactive);
+        assertEquals(Status.COMPLETED, completed);
         
         Status[] values = Status.values();
         assertTrue(values.length > 0);
