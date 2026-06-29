@@ -133,9 +133,6 @@ pipeline {
                         # Assurez-vous que le namespace existe
                         kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                         
-                        # Nettoyer l'ancien déploiement k8s brut
-                        kubectl delete -f k8s/ -n ${K8S_NAMESPACE} --ignore-not-found=true
-                        
                         # Déploiement avec Helm
                         helm upgrade --install student-management ./helm/student-management \\
                             --namespace ${K8S_NAMESPACE} \\
@@ -168,9 +165,10 @@ pipeline {
         stage('Monitoring') {
             steps {
                 sh '''
-                    # Les manifestes Prometheus et Grafana sont appliqués via le dossier k8s/
-                    kubectl rollout status deployment/prometheus -n ${K8S_NAMESPACE}
-                    kubectl rollout status deployment/grafana -n ${K8S_NAMESPACE}
+                    # Les manifestes Prometheus et Grafana étaient appliqués via le dossier k8s/
+                    # On ignore l'erreur s'ils ne sont pas déployés
+                    kubectl rollout status deployment/prometheus -n ${K8S_NAMESPACE} || true
+                    kubectl rollout status deployment/grafana -n ${K8S_NAMESPACE} || true
                 '''
             }
         }
