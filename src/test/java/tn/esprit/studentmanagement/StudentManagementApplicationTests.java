@@ -10,6 +10,12 @@ class StudentManagementApplicationTests {
 
     @Test
     void contextLoads() {
+        // Test que le contexte Spring se charge correctement
+    }
+
+    @Test
+    void testMain() {
+        StudentManagementApplication.main(new String[] {"--server.port=0"});
     }
 
 }
