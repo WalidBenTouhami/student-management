@@ -57,7 +57,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh "chmod +x mvnw && ./mvnw sonar:sonar -Dsonar.projectKey=student-management -Dsonar.projectName='Student Management' -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=squ_1a68065e9dfc64029cc28b2f1c355beab1c5cc1c -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml"
+                    sh "chmod +x mvnw && ./mvnw sonar:sonar -Dsonar.projectKey=student-management-pipeline -Dsonar.projectName='Student Management Pipeline' -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.login=squ_1a68065e9dfc64029cc28b2f1c355beab1c5cc1c -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml"
                 }
             }
         }
