@@ -1,6 +1,6 @@
 package tn.esprit.studentmanagement.services;
 
-import lombok.AllArgsConstructor;
+
 
 import org.springframework.stereotype.Service;
 import tn.esprit.studentmanagement.entities.Department;
