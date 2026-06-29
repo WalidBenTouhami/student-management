@@ -1,17 +1,6 @@
 # 🎓 Student Management System
 ![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD_Automated-blue?logo=jenkins)
-![Quality Gate](https://img.shields.io/badge/Quality%20Gate-Passed-success?logo=sonarqube)
-![Maintainability](https://img.shields.io/badge/Maintainability-A-success?logo=sonarqube)
-![Reliability](https://img.shields.io/badge/Reliability-A-success?logo=sonarqube)
-![Security](https://img.shields.io/badge/Security-A-success?logo=sonarqube)
-![Vulnerabilities](https://img.shields.io/badge/Vulnerabilities-0-success?logo=sonarqube)
-![Hotspots](https://img.shields.io/badge/Security%20Hotspots-0-success?logo=sonarqube)
-![Technical Debt](https://img.shields.io/badge/Technical%20Debt-1h-success?logo=sonarqube)
-![Coverage](https://img.shields.io/badge/Coverage-85%25-success?logo=sonarqube)
-![Code Smells](https://img.shields.io/badge/Code%20Smells-2-success?logo=sonarqube)
-![Bugs](https://img.shields.io/badge/Bugs-0-success?logo=sonarqube)
-![Duplications](https://img.shields.io/badge/Duplications-0.0%25-success?logo=sonarqube)
-![LOC](https://img.shields.io/badge/Lines%20of%20Code-1.2k-blue?logo=sonarqube)
+
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-Deployed-326ce5?logo=kubernetes)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.16-6DB33F?logo=spring)
