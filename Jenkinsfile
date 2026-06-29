@@ -117,7 +117,7 @@ pipeline {
                 script {
                     sh """
                         eval \$(minikube -p minikube docker-env)
-                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --severity HIGH,CRITICAL --no-progress --ignore-unfixed ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --timeout 15m --severity HIGH,CRITICAL --no-progress --ignore-unfixed ${DOCKER_IMAGE}:${DOCKER_TAG}
                     """
                 }
             }
