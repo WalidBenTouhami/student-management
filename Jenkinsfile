@@ -79,6 +79,30 @@ pipeline {
         }
 
         // ============================================================
+        // 3.5. JACOCO QUALITY GATE
+        // ============================================================
+        stage('JaCoCo Quality Gate') {
+            steps {
+                script {
+                    def coverage = sh(
+                        script: '''
+                            grep -o 'percentage="[^"]*"' target/site/jacoco/index.html | head -1 | cut -d'"' -f2 || echo "0"
+                        ''',
+                        returnStdout: true
+                    ).trim().toDouble()
+
+                    echo "📊 Couverture JaCoCo : ${coverage}%"
+
+                    if (coverage < 70.0) {
+                        error "❌ JaCoCo Quality Gate échoué ! Couverture = ${coverage}% (minimum requis : 70%)"
+                    } else {
+                        echo "✅ JaCoCo Quality Gate passé avec succès (${coverage}%)"
+                    }
+                }
+            }
+        }
+
+        // ============================================================
         // 4. ANALYSE SONARQUBE
         // ============================================================
         stage('SonarQube Analysis') {

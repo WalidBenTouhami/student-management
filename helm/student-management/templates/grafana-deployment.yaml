@@ -52,6 +52,9 @@ spec:
               subPath: dashboards.yaml
             - name: grafana-dashboards
               mountPath: /var/lib/grafana/dashboards
+            - name: grafana-dashboards-custom
+              mountPath: /var/lib/grafana/dashboards/code-coverage.json
+              subPath: code-coverage.json
           resources:
             requests:
               memory: {{ .Values.grafana.resources.requests.memory }}
@@ -81,6 +84,9 @@ spec:
             name: grafana-config
         - name: grafana-dashboards
           emptyDir: {}
+        - name: grafana-dashboards-custom
+          configMap:
+            name: grafana-dashboards-custom
 ---
 apiVersion: v1
 kind: Service
