@@ -273,24 +273,28 @@ pipeline {
                     <p><b>Erreur:</b> ${env.ERROR_MESSAGE}</p>
                     <p><b>Voir les logs:</b> ${env.BUILD_URL}/console</p>
                 """,
-                    to: "${MAIL_TO}",
-                    from: "${MAIL_FROM}",
-                    replyTo: "${MAIL_FROM}",
+                    to: "${env.MAIL_TO}",
+                    from: "${env.MAIL_FROM}",
+                    replyTo: "${env.MAIL_FROM}",
                     mimeType: 'text/html'
             )
         }
         always {
             script {
-                sh '''
-                    echo "🧹 Nettoyage Docker..."
-                    eval $(minikube -p minikube docker-env)
-                    # Supprimer les conteneurs arrêtés, les réseaux inutilisés et les images pendantes
-                    docker system prune -f
-                    # Supprimer les vieilles images de l'application pour libérer de l'espace
-                    docker images "esprit/student-management" -q | tail -n +3 | xargs -r docker rmi -f || true
-                '''
+                if (env.NODE_NAME != null) {
+                    sh '''
+                        echo "🧹 Nettoyage Docker..."
+                        eval $(minikube -p minikube docker-env)
+                        # Supprimer les conteneurs arrêtés, les réseaux inutilisés et les images pendantes
+                        docker system prune -f
+                        # Supprimer les vieilles images de l'application pour libérer de l'espace
+                        docker images "esprit/student-management" -q | tail -n +3 | xargs -r docker rmi -f || true
+                    '''
+                    cleanWs()
+                } else {
+                    echo "🧹 Nettoyage ignoré (pipeline échoué avant l'allocation d'un noeud)"
+                }
             }
-            cleanWs()
         }
     }
 }
