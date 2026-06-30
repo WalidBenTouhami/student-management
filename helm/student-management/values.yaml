@@ -87,4 +87,4 @@ external:
   sonarPort: "9000"
   jenkinsMetricsToken: "11fd280a42943b4f20184833083de7e3c8"
   sonarToken: "sqa_8186ec2bc2572e08ad1a14abb33e5c2b734a033e"
-  sonarAdminPassword: "admin"
+  sonarAdminPassword: "0000"

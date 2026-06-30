@@ -1,7 +1,10 @@
 pipeline {
     agent any
 
-
+    tools {
+        jdk 'JDK25'
+        maven 'Maven-3.9.9'
+    }
 
     environment {
         APP_ENV = "DEV"
@@ -10,6 +13,13 @@ pipeline {
         DOCKER_TAG = "${env.BUILD_ID}"
         K8S_NAMESPACE = "devops-tools"
         SONAR_HOST_URL = "http://192.168.56.10:9000"
+        // Email — Gmail SMTP (déduit des headers email reçus le 29/06/2026)
+        MAIL_FROM     = "walid.bentouhami@esprit.tn"
+        MAIL_SENDER   = "ds.walid.bentouhami@gmail.com"
+        MAIL_TO       = "walid.bentouhami@esprit.tn"
+        // Credentials Jenkins
+        SONAR_TOKEN = credentials('sonar-token')
+        GITHUB_CREDENTIALS = credentials('github-credentials')
     }
 
     stages {
@@ -57,21 +67,21 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh "chmod +x mvnw && ./mvnw sonar:sonar -Dsonar.projectKey=student-management-pipeline -Dsonar.projectName='Student Management Pipeline' -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.token=sqa_8186ec2bc2572e08ad1a14abb33e5c2b734a033e -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml"
+                    sh "chmod +x mvnw && ./mvnw sonar:sonar -Dsonar.projectKey=student-management-pipeline -Dsonar.projectName='Student Management Pipeline' -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.token=${SONAR_TOKEN} -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml"
                 }
             }
         }
 
         // ============================================================
-        // 5. QUALITY GATE (Désactivé temporairement)
+        // 5. QUALITY GATE
         // ============================================================
-        // stage('Quality Gate') {
-        //     steps {
-        //         timeout(time: 1, unit: 'HOURS') {
-        //             waitForQualityGate abortPipeline: false
-        //         }
-        //     }
-        // }
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
 
         // ============================================================
         // 6. PACKAGE (JAR)
@@ -122,18 +132,20 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh """
-                        # Assurez-vous que le namespace existe
-                        kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
-                        
-                        # Déploiement avec Helm
-                        helm upgrade --install student-management ./helm/student-management \\
-                            --namespace ${K8S_NAMESPACE} \\
-                            --set image.tag=${DOCKER_TAG}
-                        
-                        # Attente du déploiement
-                        kubectl rollout status deployment/spring-app -n ${K8S_NAMESPACE}
-                    """
+                    retry(3) {
+                        sh """
+                            # Assurez-vous que le namespace existe
+                            kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                            
+                            # Déploiement avec Helm
+                            helm upgrade --install student-management ./helm/student-management \\
+                                --namespace ${K8S_NAMESPACE} \\
+                                --set image.tag=${DOCKER_TAG}
+                            
+                            # Attente du déploiement
+                            kubectl rollout status deployment/spring-app -n ${K8S_NAMESPACE} --timeout=5m
+                        """
+                    }
                 }
             }
         }
@@ -143,12 +155,17 @@ pipeline {
         // ============================================================
         stage('Smoke Test') {
             steps {
-                sh '''
-                    sleep 10
-                    # Test via Minikube IP et NodePort
-                    MINIKUBE_IP=$(minikube ip)
-                    curl -f http://${MINIKUBE_IP}:30080/student/actuator/health || exit 1
-                '''
+                script {
+                    retry(3) {
+                        sh '''
+                            sleep 10
+                            # Test via Minikube IP et NodePort
+                            MINIKUBE_IP=$(minikube ip)
+                            curl -f -s -o /dev/null http://${MINIKUBE_IP}:30080/student/actuator/health || exit 1
+                            echo "✅ Application OK"
+                        '''
+                    }
+                }
             }
         }
 
@@ -183,7 +200,10 @@ pipeline {
                     <p><b>Déployé sur:</b> Kubernetes (${K8S_NAMESPACE})</p>
                     <p><b>Application:</b> <a href="http://192.168.56.10:8089/student">http://192.168.56.10:8089/student</a></p>
                 """,
-                    to: 'walid.bentouhami@esprit.tn'
+                    to: "${MAIL_TO}",
+                    from: "${MAIL_FROM}",
+                    replyTo: "${MAIL_FROM}",
+                    mimeType: 'text/html'
             )
         }
         failure {
@@ -197,14 +217,17 @@ pipeline {
                     <p><b>Erreur:</b> ${env.ERROR_MESSAGE}</p>
                     <p><b>Voir les logs:</b> ${env.BUILD_URL}/console</p>
                 """,
-                    to: 'walid.bentouhami@esprit.tn'
+                    to: "${MAIL_TO}",
+                    from: "${MAIL_FROM}",
+                    replyTo: "${MAIL_FROM}",
+                    mimeType: 'text/html'
             )
         }
         always {
             cleanWs()
             script {
                 sh '''
-                    echo "Nettoyage de l'espace Docker dans Minikube..."
+                    echo "🧹 Nettoyage Docker..."
                     eval $(minikube -p minikube docker-env)
                     # Supprimer les conteneurs arrêtés, les réseaux inutilisés et les images pendantes
                     docker system prune -f
