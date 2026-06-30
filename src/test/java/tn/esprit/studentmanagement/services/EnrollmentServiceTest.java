@@ -92,6 +92,8 @@ class EnrollmentServiceTest {
         doNothing().when(enrollmentRepository).deleteById(1L);
         enrollmentService.deleteEnrollment(1L);
         verify(enrollmentRepository, times(1)).deleteById(1L);
+    }
+
     @Test
     void rejectsUpdateMissingEnrollment() {
         EnrollmentDTO input = new EnrollmentDTO();

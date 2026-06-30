@@ -92,6 +92,8 @@ class StudentServiceTest {
         doNothing().when(studentRepository).deleteById(1L);
         studentService.deleteStudent(1L);
         verify(studentRepository, times(1)).deleteById(1L);
+    }
+
     @Test
     void rejectsDuplicateEmail() {
         StudentDTO input = new StudentDTO();

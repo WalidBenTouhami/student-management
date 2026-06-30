@@ -92,6 +92,8 @@ class DepartmentServiceTest {
         doNothing().when(departmentRepository).deleteById(1L);
         departmentService.deleteDepartment(1L);
         verify(departmentRepository, times(1)).deleteById(1L);
+    }
+
     @Test
     void rejectsUpdateMissingDepartment() {
         DepartmentDTO input = new DepartmentDTO();
