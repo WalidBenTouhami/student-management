@@ -86,7 +86,17 @@ pipeline {
                 script {
                     def coverage = sh(
                         script: '''
-                            grep -o 'percentage="[^"]*"' target/site/jacoco/index.html | head -1 | cut -d'"' -f2 || echo "0"
+                            awk -F, '{
+                                if (NR > 1) {
+                                    missed += $4;
+                                    covered += $5;
+                                }
+                            } END {
+                                if (missed + covered > 0)
+                                    printf "%.2f", (covered / (missed + covered)) * 100
+                                else
+                                    print "0"
+                            }' target/site/jacoco/jacoco.csv
                         ''',
                         returnStdout: true
                     ).trim().toDouble()
