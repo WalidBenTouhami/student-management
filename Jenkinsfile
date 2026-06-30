@@ -20,6 +20,8 @@ pipeline {
         // Credentials Jenkins
         SONAR_TOKEN = credentials('sonar-token')
         GITHUB_CREDENTIALS = credentials('github-credentials')
+        // Credential Kubernetes (Fichier Kubeconfig en tant que Secret File)
+        KUBECONFIG = credentials('k8s-kubeconfig')
     }
 
     stages {
@@ -134,6 +136,8 @@ pipeline {
                 script {
                     retry(3) {
                         sh """
+                            # Le fichier KUBECONFIG est automatiquement injecté par Jenkins via l'environnement
+                            
                             # Assurez-vous que le namespace existe
                             kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                             
