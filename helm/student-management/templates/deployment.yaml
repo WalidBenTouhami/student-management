@@ -61,7 +61,7 @@ spec:
             httpGet:
               path: {{ .Values.app.contextPath }}/actuator/health
               port: {{ .Values.app.port }}
-            initialDelaySeconds: 60
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 12

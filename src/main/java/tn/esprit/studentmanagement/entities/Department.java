@@ -10,7 +10,6 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
 public class Department {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

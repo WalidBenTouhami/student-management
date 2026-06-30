@@ -1,12 +1,12 @@
 package tn.esprit.studentmanagement.services;
 
-import tn.esprit.studentmanagement.entities.Department;
+import tn.esprit.studentmanagement.dto.DepartmentDTO;
 
 import java.util.List;
 
 public interface IDepartmentService {
-    public List<Department> getAllDepartments();
-    public Department getDepartmentById(Long idDepartment);
-    public Department saveDepartment(Department department);
+    public List<DepartmentDTO> getAllDepartments();
+    public DepartmentDTO getDepartmentById(Long idDepartment);
+    public DepartmentDTO saveDepartment(DepartmentDTO departmentDTO);
     public void deleteDepartment(Long idDepartment);
 }

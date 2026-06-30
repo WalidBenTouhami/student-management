@@ -1,16 +1,14 @@
 package tn.esprit.studentmanagement.controllers;
 
-
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.studentmanagement.entities.Department;
-
+import tn.esprit.studentmanagement.dto.DepartmentDTO;
 import tn.esprit.studentmanagement.services.IDepartmentService;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/Department")
-@CrossOrigin(origins = "http://localhost:4200")
+@RequestMapping("/departments")
 public class DepartmentController {
     private IDepartmentService departmentService;
 
@@ -18,21 +16,31 @@ public class DepartmentController {
         this.departmentService = departmentService;
     }
 
-    @GetMapping("/getAllDepartment")
-    public List<Department> getAllDepartment() { return departmentService.getAllDepartments(); }
+    @GetMapping
+    public List<DepartmentDTO> getAllDepartment() {
+        return departmentService.getAllDepartments();
+    }
 
-    @GetMapping("/getDepartment/{id}")
-    public Department getDepartment(@PathVariable Long id) { return departmentService.getDepartmentById(id); }
+    @GetMapping("/{id}")
+    public DepartmentDTO getDepartment(@PathVariable Long id) {
+        return departmentService.getDepartmentById(id);
+    }
 
-    @PostMapping("/createDepartment")
-    public Department createDepartment(@RequestBody Department department) { return departmentService.saveDepartment(department); }
-
-    @PutMapping("/updateDepartment")
-    public Department updateDepartment(@RequestBody Department department) {
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public DepartmentDTO createDepartment(@RequestBody DepartmentDTO department) {
         return departmentService.saveDepartment(department);
     }
 
-    @DeleteMapping("/deleteDepartment/{id}")
+    @PutMapping("/{id}")
+    public DepartmentDTO updateDepartment(@PathVariable Long id, @RequestBody DepartmentDTO department) {
+        department.setIdDepartment(id);
+        return departmentService.saveDepartment(department);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteDepartment(@PathVariable Long id) {
-      departmentService.deleteDepartment(id); }
+        departmentService.deleteDepartment(id);
+    }
 }

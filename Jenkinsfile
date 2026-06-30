@@ -105,11 +105,11 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    sh """
-                        eval \$(minikube -p minikube docker-env)
-                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} -f docker/Dockerfile .
-                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                    """
+                    sh '''
+                        eval $(minikube -p minikube docker-env)
+                        docker build -t $DOCKER_IMAGE:$DOCKER_TAG -f docker/Dockerfile .
+                        docker tag $DOCKER_IMAGE:$DOCKER_TAG $DOCKER_IMAGE:latest
+                    '''
                 }
             }
         }
@@ -120,10 +120,10 @@ pipeline {
         stage('Trivy Security Scan') {
             steps {
                 script {
-                    sh """
-                        eval \$(minikube -p minikube docker-env)
-                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --timeout 30m --severity HIGH,CRITICAL --no-progress --ignore-unfixed ${DOCKER_IMAGE}:${DOCKER_TAG} || true
-                    """
+                    sh '''
+                        eval $(minikube -p minikube docker-env)
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --timeout 30m --severity HIGH,CRITICAL --no-progress --ignore-unfixed $DOCKER_IMAGE:$DOCKER_TAG
+                    '''
                 }
             }
         }
@@ -135,20 +135,22 @@ pipeline {
             steps {
                 script {
                     retry(3) {
-                        sh """
+                        sh '''
                             # Le fichier KUBECONFIG est automatiquement injecté par Jenkins via l'environnement
                             
                             # Assurez-vous que le namespace existe
-                            kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                            kubectl create namespace $K8S_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
                             
                             # Déploiement avec Helm
                             helm upgrade --install student-management ./helm/student-management \\
-                                --namespace ${K8S_NAMESPACE} \\
-                                --set image.tag=${DOCKER_TAG}
+                                --namespace $K8S_NAMESPACE \\
+                                --set image.tag=$DOCKER_TAG \\
+                                --set mysql.password=spring123 \\
+                                --set grafana.adminPassword=admin
                             
                             # Attente du déploiement
-                            kubectl rollout status deployment/spring-app -n ${K8S_NAMESPACE} --timeout=5m
-                        """
+                            kubectl rollout status deployment/spring-app -n $K8S_NAMESPACE --timeout=5m
+                        '''
                     }
                 }
             }

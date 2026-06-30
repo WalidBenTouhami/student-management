@@ -1,37 +1,53 @@
 package tn.esprit.studentmanagement.services;
 
-
-
 import org.springframework.stereotype.Service;
-import tn.esprit.studentmanagement.repositories.EnrollmentRepository;
+import org.springframework.transaction.annotation.Transactional;
+import tn.esprit.studentmanagement.dto.EnrollmentDTO;
 import tn.esprit.studentmanagement.entities.Enrollment;
+import tn.esprit.studentmanagement.exceptions.ResourceNotFoundException;
+import tn.esprit.studentmanagement.repositories.EnrollmentRepository;
+import tn.esprit.studentmanagement.utils.DtoMapper;
+
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class EnrollmentService implements IEnrollment {
     private final EnrollmentRepository enrollmentRepository;
+    private final DtoMapper dtoMapper;
 
-    public EnrollmentService(EnrollmentRepository enrollmentRepository) {
+    public EnrollmentService(EnrollmentRepository enrollmentRepository, DtoMapper dtoMapper) {
         this.enrollmentRepository = enrollmentRepository;
+        this.dtoMapper = dtoMapper;
     }
 
     @Override
-    public List<Enrollment> getAllEnrollments() {
-        return enrollmentRepository.findAll();
+    public List<EnrollmentDTO> getAllEnrollments() {
+        return enrollmentRepository.findAll().stream()
+                .map(dtoMapper::toEnrollmentDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Enrollment getEnrollmentById(Long idEnrollment) {
-        return enrollmentRepository.findById(java.util.Objects.requireNonNull(idEnrollment)).orElse(null);
+    public EnrollmentDTO getEnrollmentById(Long idEnrollment) {
+        Enrollment enrollment = enrollmentRepository.findById(java.util.Objects.requireNonNull(idEnrollment))
+                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found with ID: " + idEnrollment));
+        return dtoMapper.toEnrollmentDTO(enrollment);
     }
 
     @Override
-    public Enrollment saveEnrollment(Enrollment enrollment) {
-        return enrollmentRepository.save(java.util.Objects.requireNonNull(enrollment));
+    public EnrollmentDTO saveEnrollment(EnrollmentDTO enrollmentDTO) {
+        Enrollment enrollment = dtoMapper.toEnrollmentEntity(java.util.Objects.requireNonNull(enrollmentDTO));
+        enrollment = enrollmentRepository.save(enrollment);
+        return dtoMapper.toEnrollmentDTO(enrollment);
     }
 
     @Override
     public void deleteEnrollment(Long idEnrollment) {
-        enrollmentRepository.deleteById(java.util.Objects.requireNonNull(idEnrollment));
+        if (!enrollmentRepository.existsById(idEnrollment)) {
+            throw new ResourceNotFoundException("Enrollment not found with ID: " + idEnrollment);
+        }
+        enrollmentRepository.deleteById(idEnrollment);
     }
 }

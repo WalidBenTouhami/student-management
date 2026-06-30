@@ -1,16 +1,14 @@
 package tn.esprit.studentmanagement.controllers;
 
-
-
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import tn.esprit.studentmanagement.entities.Student;
+import tn.esprit.studentmanagement.dto.StudentDTO;
 import tn.esprit.studentmanagement.services.IStudentService;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/students")
-@CrossOrigin(origins = "http://localhost:4200")
 public class StudentController {
     private IStudentService studentService;
 
@@ -18,20 +16,31 @@ public class StudentController {
         this.studentService = studentService;
     }
 
-    @GetMapping("/getAllStudents")
-    public List<Student> getAllStudents() { return studentService.getAllStudents(); }
-
-    @GetMapping("/getStudent/{id}")
-    public Student getStudent(@PathVariable Long id) { return studentService.getStudentById(id); }
-
-    @PostMapping("/createStudent")
-    public Student createStudent(@RequestBody Student student) { return studentService.saveStudent(student); }
-
-    @PutMapping("/updateStudent")
-    public Student updateStudent(@RequestBody Student student) {
-        return studentService.saveStudent(student);
+    @GetMapping
+    public List<StudentDTO> getAllStudents() {
+        return studentService.getAllStudents();
     }
 
-    @DeleteMapping("/deleteStudent/{id}")
-    public void deleteStudent(@PathVariable Long id) { studentService.deleteStudent(id); }
+    @GetMapping("/{id}")
+    public StudentDTO getStudent(@PathVariable Long id) {
+        return studentService.getStudentById(id);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public StudentDTO createStudent(@RequestBody StudentDTO studentDTO) {
+        return studentService.saveStudent(studentDTO);
+    }
+
+    @PutMapping("/{id}")
+    public StudentDTO updateStudent(@PathVariable Long id, @RequestBody StudentDTO studentDTO) {
+        studentDTO.setIdStudent(id);
+        return studentService.saveStudent(studentDTO);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteStudent(@PathVariable Long id) {
+        studentService.deleteStudent(id);
+    }
 }

@@ -10,7 +10,6 @@ import java.time.LocalDate;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
 public class Enrollment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
