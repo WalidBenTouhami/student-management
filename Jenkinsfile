@@ -52,13 +52,28 @@ pipeline {
         // ============================================================
         // 3. TESTS UNITAIRE
         // ============================================================
-        stage('Test') {
+        stage('Test & Coverage') {
             steps {
-                sh 'chmod +x mvnw && ./mvnw clean test jacoco:report'
+                sh '''
+                    chmod +x mvnw
+                    ./mvnw clean test jacoco:report jacoco:check --no-transfer-progress
+                '''
             }
             post {
                 always {
-                    junit 'target/surefire-reports/*.xml'
+                    // Publie les résultats de tests
+                    junit '**/target/surefire-reports/*.xml'
+                    
+                    // Publie le rapport JaCoCo pour Jenkins
+                    jacoco(
+                        execPattern: 'target/*.exec',
+                        classPattern: 'target/classes',
+                        sourcePattern: 'src/main/java',
+                        exclusionPattern: 'src/test/*'
+                    )
+                }
+                success {
+                    echo "✅ Tests passed with sufficient coverage"
                 }
             }
         }
