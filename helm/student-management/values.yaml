@@ -18,6 +18,9 @@ app:
   contextPath: /student
   replicas: 2
   corsAllowedOrigins: "http://localhost:4200"
+  security:
+    username: api-user
+    password: ""
   resources:
     requests:
       memory: "512Mi"

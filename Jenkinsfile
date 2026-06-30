@@ -23,6 +23,7 @@ pipeline {
         MYSQL_PASSWORD = credentials('mysql-password')
         MYSQL_ROOT_PASSWORD = credentials('mysql-root-password')
         GRAFANA_ADMIN_PASSWORD = credentials('grafana-admin-password')
+        APP_SECURITY_PASSWORD = credentials('app-api-password')
         // Credential Kubernetes (Fichier Kubeconfig en tant que Secret File)
         KUBECONFIG = credentials('k8s-kubeconfig')
     }
@@ -194,6 +195,7 @@ pipeline {
                                 --set-string mysql.password="$MYSQL_PASSWORD" \\
                                 --set-string mysql.rootPassword="$MYSQL_ROOT_PASSWORD" \\
                                 --set-string grafana.adminPassword="$GRAFANA_ADMIN_PASSWORD" \\
+                                --set-string app.security.password="$APP_SECURITY_PASSWORD" \\
                                 --wait --atomic --timeout 10m
                             
                             # Attente du déploiement

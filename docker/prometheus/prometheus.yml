@@ -28,6 +28,12 @@ scrape_configs:
   # ============================================================
   - job_name: 'spring-app'
     metrics_path: '/student/actuator/prometheus'
+    basic_auth:
+      username: 'dev-admin'
+      password: 'dev-only-change-me'
+    basic_auth:
+      username: 'dev-admin'
+      password: 'dev-only-change-me'
     static_configs:
       - targets: ['spring-app:8089']
 

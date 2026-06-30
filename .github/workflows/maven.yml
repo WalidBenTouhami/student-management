@@ -40,6 +40,7 @@ jobs:
           --set-string mysql.password=test-password
           --set-string mysql.rootPassword=test-root-password
           --set-string grafana.adminPassword=test-password
+          --set-string app.security.password=test-password
 
       - name: Upload test reports
         if: always()

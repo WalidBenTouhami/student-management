@@ -54,6 +54,16 @@ spec:
                   key: SPRING_DATASOURCE_PASSWORD
             - name: APP_CORS_ALLOWED_ORIGINS
               value: {{ .Values.app.corsAllowedOrigins | quote }}
+            - name: APP_SECURITY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: APP_SECURITY_USERNAME
+            - name: APP_SECURITY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: APP_SECURITY_PASSWORD
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

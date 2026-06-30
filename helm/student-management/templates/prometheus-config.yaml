@@ -15,6 +15,9 @@ data:
       # ============================================================
       - job_name: 'spring-app'
         metrics_path: '{{ .Values.app.contextPath }}/actuator/prometheus'
+        basic_auth:
+          username: {{ .Values.app.security.username | quote }}
+          password_file: /etc/prometheus/secrets/app-password
         static_configs:
           - targets: ['spring-service:{{ .Values.app.port }}']
 
