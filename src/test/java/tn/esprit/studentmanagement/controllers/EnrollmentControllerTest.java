@@ -9,7 +9,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import tn.esprit.studentmanagement.entities.Enrollment;
+import tn.esprit.studentmanagement.dto.EnrollmentDTO;
 import tn.esprit.studentmanagement.services.IEnrollment;
 
 import java.util.Arrays;
@@ -39,12 +39,12 @@ class EnrollmentControllerTest {
     }
 
     @Test
-    void testGetAllEnrollments() throws Exception {
-        Enrollment e1 = new Enrollment();
+    void testGetAllEnrollment() throws Exception {
+        EnrollmentDTO e1 = new EnrollmentDTO();
         e1.setIdEnrollment(1L);
         when(enrollmentService.getAllEnrollments()).thenReturn(Arrays.asList(e1));
 
-        mockMvc.perform(get("/Enrollment/getAllEnrollment"))
+        mockMvc.perform(get("/enrollments"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idEnrollment").value(1));
 
@@ -53,11 +53,11 @@ class EnrollmentControllerTest {
 
     @Test
     void testGetEnrollment() throws Exception {
-        Enrollment e1 = new Enrollment();
+        EnrollmentDTO e1 = new EnrollmentDTO();
         e1.setIdEnrollment(1L);
         when(enrollmentService.getEnrollmentById(1L)).thenReturn(e1);
 
-        mockMvc.perform(get("/Enrollment/getEnrollment/1"))
+        mockMvc.perform(get("/enrollments/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idEnrollment").value(1));
 
@@ -66,40 +66,40 @@ class EnrollmentControllerTest {
 
     @Test
     void testCreateEnrollment() throws Exception {
-        Enrollment e1 = new Enrollment();
+        EnrollmentDTO e1 = new EnrollmentDTO();
         e1.setGrade(15.5);
-        when(enrollmentService.saveEnrollment(any(Enrollment.class))).thenReturn(e1);
+        when(enrollmentService.saveEnrollment(any(EnrollmentDTO.class))).thenReturn(e1);
 
-        mockMvc.perform(post("/Enrollment/createEnrollment")
+        mockMvc.perform(post("/enrollments")
                 .contentType(java.util.Objects.requireNonNull(MediaType.APPLICATION_JSON))
                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(e1))))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.grade").value(15.5));
 
-        verify(enrollmentService, times(1)).saveEnrollment(any(Enrollment.class));
+        verify(enrollmentService, times(1)).saveEnrollment(any(EnrollmentDTO.class));
     }
 
     @Test
     void testUpdateEnrollment() throws Exception {
-        Enrollment e1 = new Enrollment();
+        EnrollmentDTO e1 = new EnrollmentDTO();
         e1.setGrade(15.5);
-        when(enrollmentService.saveEnrollment(any(Enrollment.class))).thenReturn(e1);
+        when(enrollmentService.saveEnrollment(any(EnrollmentDTO.class))).thenReturn(e1);
 
-        mockMvc.perform(put("/Enrollment/updateEnrollment")
+        mockMvc.perform(put("/enrollments/1")
                 .contentType(java.util.Objects.requireNonNull(MediaType.APPLICATION_JSON))
                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(e1))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.grade").value(15.5));
 
-        verify(enrollmentService, times(1)).saveEnrollment(any(Enrollment.class));
+        verify(enrollmentService, times(1)).saveEnrollment(any(EnrollmentDTO.class));
     }
 
     @Test
     void testDeleteEnrollment() throws Exception {
         doNothing().when(enrollmentService).deleteEnrollment(anyLong());
 
-        mockMvc.perform(delete("/Enrollment/deleteEnrollment/1"))
-                .andExpect(status().isOk());
+        mockMvc.perform(delete("/enrollments/1"))
+                .andExpect(status().isNoContent());
 
         verify(enrollmentService, times(1)).deleteEnrollment(1L);
     }

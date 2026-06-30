@@ -9,7 +9,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import tn.esprit.studentmanagement.entities.Student;
+import tn.esprit.studentmanagement.dto.StudentDTO;
 import tn.esprit.studentmanagement.services.IStudentService;
 
 import java.util.Arrays;
@@ -40,11 +40,11 @@ class StudentControllerTest {
 
     @Test
     void testGetAllStudents() throws Exception {
-        Student s1 = new Student();
+        StudentDTO s1 = new StudentDTO();
         s1.setIdStudent(1L);
         when(studentService.getAllStudents()).thenReturn(Arrays.asList(s1));
 
-        mockMvc.perform(get("/students/getAllStudents"))
+        mockMvc.perform(get("/students"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].idStudent").value(1));
 
@@ -53,11 +53,11 @@ class StudentControllerTest {
 
     @Test
     void testGetStudent() throws Exception {
-        Student s1 = new Student();
+        StudentDTO s1 = new StudentDTO();
         s1.setIdStudent(1L);
         when(studentService.getStudentById(1L)).thenReturn(s1);
 
-        mockMvc.perform(get("/students/getStudent/1"))
+        mockMvc.perform(get("/students/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.idStudent").value(1));
 
@@ -66,40 +66,40 @@ class StudentControllerTest {
 
     @Test
     void testCreateStudent() throws Exception {
-        Student s1 = new Student();
-        s1.setFirstName("Alice");
-        when(studentService.saveStudent(any(Student.class))).thenReturn(s1);
+        StudentDTO s1 = new StudentDTO();
+        s1.setFirstName("John");
+        when(studentService.saveStudent(any(StudentDTO.class))).thenReturn(s1);
 
-        mockMvc.perform(post("/students/createStudent")
+        mockMvc.perform(post("/students")
                 .contentType(java.util.Objects.requireNonNull(MediaType.APPLICATION_JSON))
                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(s1))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName").value("Alice"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.firstName").value("John"));
 
-        verify(studentService, times(1)).saveStudent(any(Student.class));
+        verify(studentService, times(1)).saveStudent(any(StudentDTO.class));
     }
 
     @Test
     void testUpdateStudent() throws Exception {
-        Student s1 = new Student();
-        s1.setFirstName("Alice");
-        when(studentService.saveStudent(any(Student.class))).thenReturn(s1);
+        StudentDTO s1 = new StudentDTO();
+        s1.setFirstName("John");
+        when(studentService.saveStudent(any(StudentDTO.class))).thenReturn(s1);
 
-        mockMvc.perform(put("/students/updateStudent")
+        mockMvc.perform(put("/students/1")
                 .contentType(java.util.Objects.requireNonNull(MediaType.APPLICATION_JSON))
                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(s1))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.firstName").value("Alice"));
+                .andExpect(jsonPath("$.firstName").value("John"));
 
-        verify(studentService, times(1)).saveStudent(any(Student.class));
+        verify(studentService, times(1)).saveStudent(any(StudentDTO.class));
     }
 
     @Test
     void testDeleteStudent() throws Exception {
         doNothing().when(studentService).deleteStudent(anyLong());
 
-        mockMvc.perform(delete("/students/deleteStudent/1"))
-                .andExpect(status().isOk());
+        mockMvc.perform(delete("/students/1"))
+                .andExpect(status().isNoContent());
 
         verify(studentService, times(1)).deleteStudent(1L);
     }
