@@ -112,6 +112,7 @@
                             <goal>prepare-agent</goal>
                         </goals>
                         <configuration>
+                            <skip>true</skip>
                             <includes>
                                 <include>tn/esprit/studentmanagement/**</include>
                             </includes>
@@ -123,6 +124,9 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
