@@ -1,5 +1,5 @@
 # 🎓 Student Management System
-![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD_Automated-blue?logo=jenkins) ![Kubernetes](https://img.shields.io/badge/Kubernetes-Deployed-326ce5?logo=kubernetes) ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.16-6DB33F?logo=spring) ![Coverage](https://img.shields.io/badge/Coverage-75%25-green)
+![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD_Automated-blue?logo=jenkins) ![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm-326ce5?logo=kubernetes) ![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?logo=docker) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.5.16-6DB33F?logo=spring) ![Coverage](https://img.shields.io/badge/Coverage-91.76%25-brightgreen)
 -----------------------------------
 Bienvenue sur le projet **Student Management**, une application robuste développée avec **Spring Boot (Java 25 LTS)**, intégrant un environnement de développement et de déploiement DevOps complet.
 
@@ -46,8 +46,10 @@ graph TD
 ## 🚀 Fonctionnalités Principales
 - Gestion des **Étudiants** (Création, lecture, mise à jour, suppression).
 - Gestion des **Départements**.
+- Gestion des **Cours**.
 - Gestion des **Inscriptions (Enrollments)** aux différents cours.
 - API REST documentée interactivement avec **Swagger UI**.
+- Authentification HTTP Basic configurable et migrations de schéma avec **Flyway**.
 
 ---
 
@@ -143,14 +145,25 @@ Votre navigateur web s'ouvrira instantanément avec 5 onglets :
 
 ---
 
-## 🚧 État Actuel du Projet (Session en cours)
+## ✅ Validation et sécurité
 
-Aujourd'hui, nous avons accompli les tâches suivantes :
-1. **Validation CI/CD** : Le pipeline Jenkins compile, teste (Jacoco) et déploie avec succès l'application sur Minikube via Helm (`helm upgrade`).
-2. **Configuration Réseau K8s** : Les NodePorts pour Grafana (`30300`), Prometheus (`30090`) et SonarQube (`30080`) ont été configurés.
-3. **Ouverture du Pare-feu** : Le pare-feu UFW de la VM a été correctement configuré pour accepter le trafic sur ces ports.
-4. **Proxy Minikube (En attente)** : Un relais réseau (via `socat`) est en cours d'installation pour rendre l'adresse IP interne de Minikube (`192.168.49.2`) accessible depuis l'hôte Windows (`192.168.56.10`). **L'installation a été mise en pause suite à un snapshot (onlinesnapshotting) de VirtualBox figeant la machine virtuelle.**
+La commande de référence est :
 
-**Prochaine étape (ce soir)** : 
-- Finaliser l'installation des proxies `socat` natifs dès que la machine virtuelle VirtualBox sortira de son état de snapshot et reprendra son exécution normale.
-- Valider l'accès aux endpoints depuis le navigateur Windows.
+```bash
+./mvnw clean verify
+```
+
+Elle exécute 54 tests et impose au minimum 70 % de couverture JaCoCo. La dernière validation atteint 91,76 % de couverture des lignes.
+
+Les endpoints métier et Prometheus exigent une authentification HTTP Basic. Swagger et les probes Kubernetes restent accessibles sans authentification. Pour un déploiement Helm, les secrets doivent être fournis explicitement :
+
+```bash
+helm upgrade --install student-management ./helm/student-management \
+  --namespace devops-tools --create-namespace \
+  --set-string mysql.password="$MYSQL_PASSWORD" \
+  --set-string mysql.rootPassword="$MYSQL_ROOT_PASSWORD" \
+  --set-string grafana.adminPassword="$GRAFANA_ADMIN_PASSWORD" \
+  --set-string app.security.password="$APP_SECURITY_PASSWORD"
+```
+
+Jenkins doit disposer des Secret Text credentials `mysql-password`, `mysql-root-password`, `grafana-admin-password` et `app-api-password`, en plus des credentials GitHub, Kubernetes et SonarQube existants.
