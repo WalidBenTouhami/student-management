@@ -11,12 +11,12 @@ data:
 
     scrape_configs:
       # ============================================================
-      # JENKINS
+      # JENKINS — basic_auth: username=admin, password=jenkins_api_token
       # ============================================================
       - job_name: 'jenkins'
-        metrics_path: '/prometheus/'
+        metrics_path: '/prometheus'
         basic_auth:
-          username: 'prometheus-token'
+          username: 'admin'
           password: '{{ .Values.external.jenkinsMetricsToken }}'
         static_configs:
           - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.jenkinsPort }}']
@@ -44,12 +44,12 @@ data:
           - targets: ['cadvisor:8080']
 
       # ============================================================
-      # SONARQUBE
+      # SONARQUBE — /api/monitoring/metrics requiert admin ou passcode système
       # ============================================================
       - job_name: 'sonarqube'
         metrics_path: '/api/monitoring/metrics'
         basic_auth:
-          username: '{{ .Values.external.sonarToken }}'
-          password: ''
+          username: 'admin'
+          password: '{{ .Values.external.sonarAdminPassword }}'
         static_configs:
           - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.sonarPort }}']
