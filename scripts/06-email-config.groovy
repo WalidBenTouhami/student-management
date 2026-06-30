@@ -20,7 +20,7 @@ emailExt.setSmtpServer("smtp.gmail.com")
 emailExt.setSmtpPort("587")
 emailExt.setUseSsl(false) // TLS
 emailExt.setSmtpAuth("ds.walid.bentouhami@gmail.com", "izos kdzh irco qlgj")
-emailExt.setReplyToAddress("walid.bentouhami@esprit.tn")
+emailExt.setDefaultReplyTo("walid.bentouhami@esprit.tn")
 emailExt.setCharset("UTF-8")
 
 // Force STARTTLS for Gmail on port 587
