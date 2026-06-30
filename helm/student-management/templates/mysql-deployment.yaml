@@ -61,7 +61,7 @@ spec:
               command:
                 - sh
                 - -c
-                - "MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysqladmin ping -h localhost -u root"
+                - "MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -u root"
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
@@ -71,7 +71,7 @@ spec:
               command:
                 - sh
                 - -c
-                - "MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysql -h localhost -u root -e 'SELECT 1'"
+                - "MYSQL_PWD=$MYSQL_ROOT_PASSWORD mysql -h 127.0.0.1 -u root -e 'SELECT 1'"
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
