@@ -9,11 +9,11 @@ import tn.esprit.studentmanagement.repositories.StudentRepository;
 import tn.esprit.studentmanagement.utils.DtoMapper;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class StudentService implements IStudentService {
+    private static final String STUDENT_NOT_FOUND_MSG = "Student not found with ID: ";
     private final StudentRepository studentRepository;
     private final DtoMapper dtoMapper;
 
@@ -26,20 +26,20 @@ public class StudentService implements IStudentService {
     public List<StudentDTO> getAllStudents() {
         return studentRepository.findAll().stream()
                 .map(dtoMapper::toStudentDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     @Override
     public StudentDTO getStudentById(Long id) {
         Student student = studentRepository.findById(java.util.Objects.requireNonNull(id))
-                .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(STUDENT_NOT_FOUND_MSG + id));
         return dtoMapper.toStudentDTO(student);
     }
     
     @Override
     public StudentDTO saveStudent(StudentDTO studentDTO) {
         if (studentDTO.getIdStudent() != null && !studentRepository.existsById(studentDTO.getIdStudent())) {
-            throw new ResourceNotFoundException("Student not found with ID: " + studentDTO.getIdStudent());
+            throw new ResourceNotFoundException(STUDENT_NOT_FOUND_MSG + studentDTO.getIdStudent());
         }
         if (studentDTO.getIdStudent() == null && studentRepository.existsByEmail(studentDTO.getEmail())) {
             throw new IllegalArgumentException("A student with this email already exists.");
@@ -52,7 +52,7 @@ public class StudentService implements IStudentService {
     @Override
     public void deleteStudent(Long id) {
         if (!studentRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Student not found with ID: " + id);
+            throw new ResourceNotFoundException(STUDENT_NOT_FOUND_MSG + id);
         }
         studentRepository.deleteById(id);
     }

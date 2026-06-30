@@ -13,6 +13,7 @@ import java.util.List;
 @Service
 @Transactional
 public class CourseService implements ICourseService {
+    private static final String COURSE_NOT_FOUND_MSG = "Course not found with ID: ";
     private final CourseRepository courseRepository;
     private final DtoMapper dtoMapper;
 
@@ -31,13 +32,13 @@ public class CourseService implements ICourseService {
     @Transactional(readOnly = true)
     public CourseDTO getCourseById(Long id) {
         return dtoMapper.toCourseDTO(courseRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Course not found with ID: " + id)));
+                .orElseThrow(() -> new ResourceNotFoundException(COURSE_NOT_FOUND_MSG + id)));
     }
 
     @Override
     public CourseDTO saveCourse(CourseDTO courseDTO) {
         if (courseDTO.getIdCourse() != null && !courseRepository.existsById(courseDTO.getIdCourse())) {
-            throw new ResourceNotFoundException("Course not found with ID: " + courseDTO.getIdCourse());
+            throw new ResourceNotFoundException(COURSE_NOT_FOUND_MSG + courseDTO.getIdCourse());
         }
         if (courseDTO.getIdCourse() == null && courseRepository.existsByCode(courseDTO.getCode())) {
             throw new IllegalArgumentException("A course with this code already exists.");
@@ -49,7 +50,7 @@ public class CourseService implements ICourseService {
     @Override
     public void deleteCourse(Long id) {
         if (!courseRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Course not found with ID: " + id);
+            throw new ResourceNotFoundException(COURSE_NOT_FOUND_MSG + id);
         }
         courseRepository.deleteById(id);
     }

@@ -9,11 +9,11 @@ import tn.esprit.studentmanagement.repositories.EnrollmentRepository;
 import tn.esprit.studentmanagement.utils.DtoMapper;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class EnrollmentService implements IEnrollment {
+    private static final String ENROLLMENT_NOT_FOUND_MSG = "Enrollment not found with ID: ";
     private final EnrollmentRepository enrollmentRepository;
     private final DtoMapper dtoMapper;
 
@@ -26,13 +26,13 @@ public class EnrollmentService implements IEnrollment {
     public List<EnrollmentDTO> getAllEnrollments() {
         return enrollmentRepository.findAll().stream()
                 .map(dtoMapper::toEnrollmentDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public EnrollmentDTO getEnrollmentById(Long idEnrollment) {
         Enrollment enrollment = enrollmentRepository.findById(java.util.Objects.requireNonNull(idEnrollment))
-                .orElseThrow(() -> new ResourceNotFoundException("Enrollment not found with ID: " + idEnrollment));
+                .orElseThrow(() -> new ResourceNotFoundException(ENROLLMENT_NOT_FOUND_MSG + idEnrollment));
         return dtoMapper.toEnrollmentDTO(enrollment);
     }
 
@@ -40,7 +40,7 @@ public class EnrollmentService implements IEnrollment {
     public EnrollmentDTO saveEnrollment(EnrollmentDTO enrollmentDTO) {
         if (enrollmentDTO.getIdEnrollment() != null
                 && !enrollmentRepository.existsById(enrollmentDTO.getIdEnrollment())) {
-            throw new ResourceNotFoundException("Enrollment not found with ID: " + enrollmentDTO.getIdEnrollment());
+            throw new ResourceNotFoundException(ENROLLMENT_NOT_FOUND_MSG + enrollmentDTO.getIdEnrollment());
         }
         Enrollment enrollment = dtoMapper.toEnrollmentEntity(java.util.Objects.requireNonNull(enrollmentDTO));
         enrollment = enrollmentRepository.save(enrollment);
@@ -50,7 +50,7 @@ public class EnrollmentService implements IEnrollment {
     @Override
     public void deleteEnrollment(Long idEnrollment) {
         if (!enrollmentRepository.existsById(idEnrollment)) {
-            throw new ResourceNotFoundException("Enrollment not found with ID: " + idEnrollment);
+            throw new ResourceNotFoundException(ENROLLMENT_NOT_FOUND_MSG + idEnrollment);
         }
         enrollmentRepository.deleteById(idEnrollment);
     }

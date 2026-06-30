@@ -9,11 +9,11 @@ import tn.esprit.studentmanagement.repositories.DepartmentRepository;
 import tn.esprit.studentmanagement.utils.DtoMapper;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class DepartmentService implements IDepartmentService {
+    private static final String DEPT_NOT_FOUND_MSG = "Department not found with ID: ";
     private final DepartmentRepository departmentRepository;
     private final DtoMapper dtoMapper;
 
@@ -26,13 +26,13 @@ public class DepartmentService implements IDepartmentService {
     public List<DepartmentDTO> getAllDepartments() {
         return departmentRepository.findAll().stream()
                 .map(dtoMapper::toDepartmentDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public DepartmentDTO getDepartmentById(Long idDepartment) {
         Department department = departmentRepository.findById(java.util.Objects.requireNonNull(idDepartment))
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found with ID: " + idDepartment));
+                .orElseThrow(() -> new ResourceNotFoundException(DEPT_NOT_FOUND_MSG + idDepartment));
         return dtoMapper.toDepartmentDTO(department);
     }
 
@@ -40,7 +40,7 @@ public class DepartmentService implements IDepartmentService {
     public DepartmentDTO saveDepartment(DepartmentDTO departmentDTO) {
         if (departmentDTO.getIdDepartment() != null
                 && !departmentRepository.existsById(departmentDTO.getIdDepartment())) {
-            throw new ResourceNotFoundException("Department not found with ID: " + departmentDTO.getIdDepartment());
+            throw new ResourceNotFoundException(DEPT_NOT_FOUND_MSG + departmentDTO.getIdDepartment());
         }
         Department department = dtoMapper.toDepartmentEntity(java.util.Objects.requireNonNull(departmentDTO));
         department = departmentRepository.save(department);
@@ -50,7 +50,7 @@ public class DepartmentService implements IDepartmentService {
     @Override
     public void deleteDepartment(Long idDepartment) {
         if (!departmentRepository.existsById(idDepartment)) {
-            throw new ResourceNotFoundException("Department not found with ID: " + idDepartment);
+            throw new ResourceNotFoundException(DEPT_NOT_FOUND_MSG + idDepartment);
         }
         departmentRepository.deleteById(idDepartment);
     }
