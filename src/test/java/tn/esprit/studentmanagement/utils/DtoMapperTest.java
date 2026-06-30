@@ -130,4 +130,29 @@ class DtoMapperTest {
         assertNull(mapper.toCourseDTO(null));
         assertNull(mapper.toCourseEntity(null));
     }
+
+    @Test
+    void mapsNullRelations() {
+        Student studentNoDept = new Student();
+        studentNoDept.setIdStudent(1L);
+        StudentDTO studentDtoNoDept = mapper.toStudentDTO(studentNoDept);
+        assertNull(studentDtoNoDept.getDepartmentId());
+
+        StudentDTO dtoNoDept = new StudentDTO();
+        dtoNoDept.setIdStudent(1L);
+        Student entityNoDept = mapper.toStudentEntity(dtoNoDept);
+        assertNull(entityNoDept.getDepartment());
+
+        Enrollment enrollmentNoRel = new Enrollment();
+        enrollmentNoRel.setIdEnrollment(1L);
+        EnrollmentDTO enrollmentDtoNoRel = mapper.toEnrollmentDTO(enrollmentNoRel);
+        assertNull(enrollmentDtoNoRel.getStudentId());
+        assertNull(enrollmentDtoNoRel.getCourseId());
+
+        EnrollmentDTO dtoNoRel = new EnrollmentDTO();
+        dtoNoRel.setIdEnrollment(1L);
+        Enrollment entityNoRel = mapper.toEnrollmentEntity(dtoNoRel);
+        assertNull(entityNoRel.getStudent());
+        assertNull(entityNoRel.getCourse());
+    }
 }

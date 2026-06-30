@@ -92,5 +92,17 @@ class EnrollmentServiceTest {
         doNothing().when(enrollmentRepository).deleteById(1L);
         enrollmentService.deleteEnrollment(1L);
         verify(enrollmentRepository, times(1)).deleteById(1L);
+    @Test
+    void rejectsUpdateMissingEnrollment() {
+        EnrollmentDTO input = new EnrollmentDTO();
+        input.setIdEnrollment(999L);
+        when(enrollmentRepository.existsById(999L)).thenReturn(false);
+        assertThrows(tn.esprit.studentmanagement.exceptions.ResourceNotFoundException.class, () -> enrollmentService.saveEnrollment(input));
+    }
+
+    @Test
+    void rejectsDeleteMissingEnrollment() {
+        when(enrollmentRepository.existsById(999L)).thenReturn(false);
+        assertThrows(tn.esprit.studentmanagement.exceptions.ResourceNotFoundException.class, () -> enrollmentService.deleteEnrollment(999L));
     }
 }

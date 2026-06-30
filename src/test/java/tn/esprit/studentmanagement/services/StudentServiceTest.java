@@ -92,5 +92,25 @@ class StudentServiceTest {
         doNothing().when(studentRepository).deleteById(1L);
         studentService.deleteStudent(1L);
         verify(studentRepository, times(1)).deleteById(1L);
+    @Test
+    void rejectsDuplicateEmail() {
+        StudentDTO input = new StudentDTO();
+        input.setEmail("test@test.com");
+        when(studentRepository.existsByEmail("test@test.com")).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () -> studentService.saveStudent(input));
+    }
+
+    @Test
+    void rejectsUpdateMissingStudent() {
+        StudentDTO input = new StudentDTO();
+        input.setIdStudent(999L);
+        when(studentRepository.existsById(999L)).thenReturn(false);
+        assertThrows(tn.esprit.studentmanagement.exceptions.ResourceNotFoundException.class, () -> studentService.saveStudent(input));
+    }
+
+    @Test
+    void rejectsDeleteMissingStudent() {
+        when(studentRepository.existsById(999L)).thenReturn(false);
+        assertThrows(tn.esprit.studentmanagement.exceptions.ResourceNotFoundException.class, () -> studentService.deleteStudent(999L));
     }
 }

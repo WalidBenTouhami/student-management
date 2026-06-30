@@ -92,5 +92,17 @@ class DepartmentServiceTest {
         doNothing().when(departmentRepository).deleteById(1L);
         departmentService.deleteDepartment(1L);
         verify(departmentRepository, times(1)).deleteById(1L);
+    @Test
+    void rejectsUpdateMissingDepartment() {
+        DepartmentDTO input = new DepartmentDTO();
+        input.setIdDepartment(999L);
+        when(departmentRepository.existsById(999L)).thenReturn(false);
+        assertThrows(tn.esprit.studentmanagement.exceptions.ResourceNotFoundException.class, () -> departmentService.saveDepartment(input));
+    }
+
+    @Test
+    void rejectsDeleteMissingDepartment() {
+        when(departmentRepository.existsById(999L)).thenReturn(false);
+        assertThrows(tn.esprit.studentmanagement.exceptions.ResourceNotFoundException.class, () -> departmentService.deleteDepartment(999L));
     }
 }

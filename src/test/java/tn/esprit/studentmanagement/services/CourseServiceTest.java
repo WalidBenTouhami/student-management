@@ -87,5 +87,17 @@ class CourseServiceTest {
         when(courseRepository.existsById(1L)).thenReturn(true);
         courseService.deleteCourse(1L);
         verify(courseRepository).deleteById(1L);
+    @Test
+    void rejectsUpdateMissingCourse() {
+        CourseDTO input = new CourseDTO();
+        input.setIdCourse(999L);
+        when(courseRepository.existsById(999L)).thenReturn(false);
+        assertThrows(ResourceNotFoundException.class, () -> courseService.saveCourse(input));
+    }
+
+    @Test
+    void rejectsDeleteMissingCourse() {
+        when(courseRepository.existsById(999L)).thenReturn(false);
+        assertThrows(ResourceNotFoundException.class, () -> courseService.deleteCourse(999L));
     }
 }
