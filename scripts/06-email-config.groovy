@@ -14,21 +14,31 @@ mailer.setReplyToAddress("walid.bentouhami@esprit.tn")
 mailer.setCharset("UTF-8")
 mailer.save()
 
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider
+import com.cloudbees.plugins.credentials.domains.Domain
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl
+import com.cloudbees.plugins.credentials.CredentialsScope
+
+// Ajouter le credential d'email
+def creds = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "email-credentials", "Gmail SMTP Credentials", "ds.walid.bentouhami@gmail.com", "izos kdzh irco qlgj")
+def credsProvider = SystemCredentialsProvider.getInstance()
+credsProvider.getStore().addCredentials(Domain.global(), creds)
+credsProvider.save()
+
 // 2. Configure Extended E-mail Notification (emailext)
 def emailExt = instance.getDescriptorByType(ExtendedEmailPublisherDescriptor.class)
 emailExt.setSmtpServer("smtp.gmail.com")
 emailExt.setSmtpPort("587")
 emailExt.setUseSsl(false) // TLS
-emailExt.setSmtpAuth("ds.walid.bentouhami@gmail.com", "izos kdzh irco qlgj")
 emailExt.setDefaultReplyTo("walid.bentouhami@esprit.tn")
 emailExt.setCharset("UTF-8")
 
-// Force STARTTLS for Gmail on port 587
+// Configure le compte avec le credential
 emailExt.getMailAccount().setSmtpHost("smtp.gmail.com")
 emailExt.getMailAccount().setSmtpPort("587")
 emailExt.getMailAccount().setUseSsl(false)
 emailExt.getMailAccount().setAddress("ds.walid.bentouhami@gmail.com")
-// emailExt uses advanced properties for STARTTLS in modern Jenkins
+emailExt.getMailAccount().setSmtpCredentialsId("email-credentials")
 emailExt.setAdvProperties("mail.smtp.starttls.enable=true")
 
 // Configuration par défaut
