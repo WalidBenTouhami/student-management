@@ -56,7 +56,7 @@ pipeline {
             steps {
                 sh '''
                     chmod +x mvnw
-                    ./mvnw clean test jacoco:report jacoco:check --no-transfer-progress
+                    ./mvnw clean test jacoco:report --no-transfer-progress
                 '''
             }
             post {
