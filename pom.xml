@@ -74,8 +74,8 @@
         </dependency>
         <dependency>
             <groupId>org.jacoco</groupId>
-            <artifactId>jacoco-report</artifactId>
-            <version>0.8.15</version>
+            <artifactId>org.jacoco.core</artifactId>
+            <version>0.8.13</version>
         </dependency>
     </dependencies>
 
@@ -110,7 +110,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.15</version>
+                <version>0.8.13</version>
                 <executions>
                     <!-- Prépare l'agent pour la collecte de couverture -->
                     <execution>
