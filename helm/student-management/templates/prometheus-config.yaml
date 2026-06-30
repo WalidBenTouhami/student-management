@@ -17,7 +17,7 @@ data:
         metrics_path: '/prometheus/'
         basic_auth:
           username: 'prometheus-token'
-          password: 'JENKINS_TOKEN_PLACEHOLDER'
+          password: '11fd280a42943b4f20184833083de7e3c8'
         static_configs:
           - targets: ['192.168.56.10:8080']
 
@@ -49,7 +49,7 @@ data:
       - job_name: 'sonarqube'
         metrics_path: '/api/monitoring/metrics'
         basic_auth:
-          username: '11fd280a42943b4f20184833083de7e3c8'
+          username: 'sqa_8186ec2bc2572e08ad1a14abb33e5c2b734a033e'
           password: ''
         static_configs:
           - targets: ['192.168.56.10:9000']
