@@ -21,6 +21,9 @@ spec:
       labels:
         app: mysql
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: mysql
           image: {{ .Values.mysql.image }}
@@ -33,7 +36,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
-                  key: SPRING_DATASOURCE_PASSWORD
+                  key: MYSQL_ROOT_PASSWORD
             - name: MYSQL_DATABASE
               value: {{ .Values.mysql.database | quote }}
             - name: MYSQL_USER
@@ -56,6 +59,10 @@ spec:
             requests:
               memory: {{ .Values.mysql.resources.requests.memory }}
               cpu: {{ .Values.mysql.resources.requests.cpu }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           livenessProbe:
             exec:
               command:
@@ -102,6 +109,10 @@ spec:
             limits:
               memory: "64Mi"
               cpu: "100m"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
       volumes:
         - name: mysql-storage
           persistentVolumeClaim:

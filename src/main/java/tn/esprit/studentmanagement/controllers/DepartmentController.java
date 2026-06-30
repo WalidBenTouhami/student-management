@@ -6,6 +6,7 @@ import tn.esprit.studentmanagement.dto.DepartmentDTO;
 import tn.esprit.studentmanagement.services.IDepartmentService;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/departments")
@@ -28,12 +29,12 @@ public class DepartmentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public DepartmentDTO createDepartment(@RequestBody DepartmentDTO department) {
+    public DepartmentDTO createDepartment(@Valid @RequestBody DepartmentDTO department) {
         return departmentService.saveDepartment(department);
     }
 
     @PutMapping("/{id}")
-    public DepartmentDTO updateDepartment(@PathVariable Long id, @RequestBody DepartmentDTO department) {
+    public DepartmentDTO updateDepartment(@PathVariable Long id, @Valid @RequestBody DepartmentDTO department) {
         department.setIdDepartment(id);
         return departmentService.saveDepartment(department);
     }

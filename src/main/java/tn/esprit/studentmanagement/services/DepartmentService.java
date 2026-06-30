@@ -38,6 +38,10 @@ public class DepartmentService implements IDepartmentService {
 
     @Override
     public DepartmentDTO saveDepartment(DepartmentDTO departmentDTO) {
+        if (departmentDTO.getIdDepartment() != null
+                && !departmentRepository.existsById(departmentDTO.getIdDepartment())) {
+            throw new ResourceNotFoundException("Department not found with ID: " + departmentDTO.getIdDepartment());
+        }
         Department department = dtoMapper.toDepartmentEntity(java.util.Objects.requireNonNull(departmentDTO));
         department = departmentRepository.save(department);
         return dtoMapper.toDepartmentDTO(department);

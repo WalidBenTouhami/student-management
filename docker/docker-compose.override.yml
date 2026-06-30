@@ -2,10 +2,11 @@
 # 🐳 DOCKER COMPOSE OVERRIDE - DEV
 # ============================================================
 
-version: '3.8'
-
 services:
   spring-app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
     environment:
       SPRING_PROFILES_ACTIVE: dev
       SPRING_JPA_SHOW_SQL: "true"
@@ -13,8 +14,6 @@ services:
       JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     volumes:
       - ../src:/app/src
-      - ../target:/app/target
-    command: mvn spring-boot:run
     ports:
       - "8089:8089"
       - "5005:5005"
@@ -23,6 +22,3 @@ services:
     ports:
       - "3307:3306"
 
-volumes:
-  mysql_data:
-    name: devops-mysql-data-dev

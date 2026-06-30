@@ -6,6 +6,7 @@ import tn.esprit.studentmanagement.dto.StudentDTO;
 import tn.esprit.studentmanagement.services.IStudentService;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/students")
@@ -28,12 +29,12 @@ public class StudentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StudentDTO createStudent(@RequestBody StudentDTO studentDTO) {
+    public StudentDTO createStudent(@Valid @RequestBody StudentDTO studentDTO) {
         return studentService.saveStudent(studentDTO);
     }
 
     @PutMapping("/{id}")
-    public StudentDTO updateStudent(@PathVariable Long id, @RequestBody StudentDTO studentDTO) {
+    public StudentDTO updateStudent(@PathVariable Long id, @Valid @RequestBody StudentDTO studentDTO) {
         studentDTO.setIdStudent(id);
         return studentService.saveStudent(studentDTO);
     }

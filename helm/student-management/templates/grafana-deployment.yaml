@@ -15,23 +15,10 @@ spec:
       labels:
         app: grafana
     spec:
-      initContainers:
-        - name: download-dashboards
-          image: curlimages/curl:latest
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              mkdir -p /var/lib/grafana/dashboards
-              curl -sf --connect-timeout 10 https://grafana.com/api/dashboards/11378/revisions/1/download \
-                -o /var/lib/grafana/dashboards/springboot.json || echo "WARNING: could not download springboot dashboard"
-              curl -sf --connect-timeout 10 https://grafana.com/api/dashboards/7362/revisions/5/download \
-                -o /var/lib/grafana/dashboards/mysql.json || echo "WARNING: could not download mysql dashboard"
-              curl -sf --connect-timeout 10 https://grafana.com/api/dashboards/14282/revisions/1/download \
-                -o /var/lib/grafana/dashboards/cadvisor.json || echo "WARNING: could not download cadvisor dashboard"
-              echo "Dashboard init done."
-          volumeMounts:
-            - name: grafana-dashboards
-              mountPath: /var/lib/grafana/dashboards
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: grafana
           image: {{ .Values.grafana.image }}
@@ -40,9 +27,15 @@ spec:
             - containerPort: {{ .Values.grafana.port }}
           env:
             - name: GF_SECURITY_ADMIN_USER
-              value: {{ .Values.grafana.adminUser | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: GRAFANA_ADMIN_USER
             - name: GF_SECURITY_ADMIN_PASSWORD
-              value: {{ .Values.grafana.adminPassword | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: GRAFANA_ADMIN_PASSWORD
           volumeMounts:
             - name: grafana-config
               mountPath: /etc/grafana/provisioning/datasources/datasources.yaml
@@ -52,9 +45,10 @@ spec:
               subPath: dashboards.yaml
             - name: grafana-dashboards
               mountPath: /var/lib/grafana/dashboards
-            - name: grafana-dashboards-custom
-              mountPath: /var/lib/grafana/dashboards/code-coverage.json
-              subPath: code-coverage.json
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           resources:
             requests:
               memory: {{ .Values.grafana.resources.requests.memory }}
@@ -84,9 +78,6 @@ spec:
             name: grafana-config
         - name: grafana-dashboards
           emptyDir: {}
-        - name: grafana-dashboards-custom
-          configMap:
-            name: grafana-dashboards-custom
 ---
 apiVersion: v1
 kind: Service

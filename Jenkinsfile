@@ -20,6 +20,9 @@ pipeline {
         // Credentials Jenkins
         SONAR_TOKEN = credentials('sonar-token')
         GITHUB_CREDENTIALS = credentials('github-credentials')
+        MYSQL_PASSWORD = credentials('mysql-password')
+        MYSQL_ROOT_PASSWORD = credentials('mysql-root-password')
+        GRAFANA_ADMIN_PASSWORD = credentials('grafana-admin-password')
         // Credential Kubernetes (Fichier Kubeconfig en tant que Secret File)
         KUBECONFIG = credentials('k8s-kubeconfig')
     }
@@ -30,13 +33,7 @@ pipeline {
         // ============================================================
         stage('Checkout') {
             steps {
-                checkout scmGit(
-                        branches: [[name: '*/main']],
-                        userRemoteConfigs: [[
-                                                    url: 'https://github.com/WalidBenTouhami/student-management.git',
-                                                    credentialsId: 'github-credentials'
-                                            ]]
-                )
+                checkout scm
             }
         }
 
@@ -124,15 +121,15 @@ pipeline {
         }
 
         // ============================================================
-        // 5. QUALITY GATE (Désactivé car l'API renvoie 401 sans token global)
+        // 5. QUALITY GATE
         // ============================================================
-        // stage('Quality Gate') {
-        //     steps {
-        //         timeout(time: 1, unit: 'HOURS') {
-        //             waitForQualityGate abortPipeline: false
-        //         }
-        //     }
-        // }
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
 
         // ============================================================
         // 6. PACKAGE (JAR)
@@ -171,7 +168,7 @@ pipeline {
                 script {
                     sh '''
                         eval $(minikube -p minikube docker-env)
-                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --timeout 30m --severity HIGH,CRITICAL --no-progress --ignore-unfixed $DOCKER_IMAGE:$DOCKER_TAG
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.63.0 image --exit-code 1 --timeout 30m --severity HIGH,CRITICAL --no-progress --ignore-unfixed $DOCKER_IMAGE:$DOCKER_TAG
                     '''
                 }
             }
@@ -194,8 +191,10 @@ pipeline {
                             helm upgrade --install student-management ./helm/student-management \\
                                 --namespace $K8S_NAMESPACE \\
                                 --set image.tag=$DOCKER_TAG \\
-                                --set mysql.password=spring123 \\
-                                --set grafana.adminPassword=admin
+                                --set-string mysql.password="$MYSQL_PASSWORD" \\
+                                --set-string mysql.rootPassword="$MYSQL_ROOT_PASSWORD" \\
+                                --set-string grafana.adminPassword="$GRAFANA_ADMIN_PASSWORD" \\
+                                --wait --atomic --timeout 10m
                             
                             # Attente du déploiement
                             kubectl rollout status deployment/spring-app -n $K8S_NAMESPACE --timeout=5m
@@ -279,7 +278,6 @@ pipeline {
             )
         }
         always {
-            cleanWs()
             script {
                 sh '''
                     echo "🧹 Nettoyage Docker..."
@@ -290,6 +288,7 @@ pipeline {
                     docker images "esprit/student-management" -q | tail -n +3 | xargs -r docker rmi -f || true
                 '''
             }
+            cleanWs()
         }
     }
 }

@@ -30,7 +30,7 @@ class StudentControllerTest {
     @InjectMocks
     private StudentController studentController;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @BeforeEach
     void setUp() {
@@ -68,6 +68,8 @@ class StudentControllerTest {
     void testCreateStudent() throws Exception {
         StudentDTO s1 = new StudentDTO();
         s1.setFirstName("John");
+        s1.setLastName("Doe");
+        s1.setEmail("john.doe@example.com");
         when(studentService.saveStudent(any(StudentDTO.class))).thenReturn(s1);
 
         mockMvc.perform(post("/students")
@@ -83,6 +85,8 @@ class StudentControllerTest {
     void testUpdateStudent() throws Exception {
         StudentDTO s1 = new StudentDTO();
         s1.setFirstName("John");
+        s1.setLastName("Doe");
+        s1.setEmail("john.doe@example.com");
         when(studentService.saveStudent(any(StudentDTO.class))).thenReturn(s1);
 
         mockMvc.perform(put("/students/1")

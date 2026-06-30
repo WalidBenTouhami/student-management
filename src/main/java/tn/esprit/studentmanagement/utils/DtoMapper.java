@@ -45,7 +45,9 @@ public class DtoMapper {
         student.setDateOfBirth(dto.getDateOfBirth());
         student.setAddress(dto.getAddress());
         if (dto.getDepartmentId() != null) {
-            student.setDepartment(departmentRepository.findById(dto.getDepartmentId()).orElse(null));
+            student.setDepartment(departmentRepository.findById(dto.getDepartmentId())
+                    .orElseThrow(() -> new tn.esprit.studentmanagement.exceptions.ResourceNotFoundException(
+                            "Department not found with ID: " + dto.getDepartmentId())));
         }
         return student;
     }
@@ -96,11 +98,37 @@ public class DtoMapper {
         enrollment.setGrade(dto.getGrade());
         enrollment.setStatus(dto.getStatus());
         if (dto.getStudentId() != null) {
-            enrollment.setStudent(studentRepository.findById(dto.getStudentId()).orElse(null));
+            enrollment.setStudent(studentRepository.findById(dto.getStudentId())
+                    .orElseThrow(() -> new tn.esprit.studentmanagement.exceptions.ResourceNotFoundException(
+                            "Student not found with ID: " + dto.getStudentId())));
         }
         if (dto.getCourseId() != null) {
-            enrollment.setCourse(courseRepository.findById(dto.getCourseId()).orElse(null));
+            enrollment.setCourse(courseRepository.findById(dto.getCourseId())
+                    .orElseThrow(() -> new tn.esprit.studentmanagement.exceptions.ResourceNotFoundException(
+                            "Course not found with ID: " + dto.getCourseId())));
         }
         return enrollment;
+    }
+
+    public CourseDTO toCourseDTO(Course course) {
+        if (course == null) return null;
+        CourseDTO dto = new CourseDTO();
+        dto.setIdCourse(course.getIdCourse());
+        dto.setName(course.getName());
+        dto.setCode(course.getCode());
+        dto.setCredit(course.getCredit());
+        dto.setDescription(course.getDescription());
+        return dto;
+    }
+
+    public Course toCourseEntity(CourseDTO dto) {
+        if (dto == null) return null;
+        Course course = new Course();
+        course.setIdCourse(dto.getIdCourse());
+        course.setName(dto.getName());
+        course.setCode(dto.getCode());
+        course.setCredit(dto.getCredit());
+        course.setDescription(dto.getDescription());
+        return course;
     }
 }

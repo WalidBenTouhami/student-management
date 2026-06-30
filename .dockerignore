@@ -17,6 +17,12 @@
 **/compose*
 **/Dockerfile*
 **/node_modules
+target
+.idea
+.vagrant
+exports
+reports
+logs
 **/npm-debug.log
 **/obj
 **/secrets.dev.yaml

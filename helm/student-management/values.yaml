@@ -9,7 +9,7 @@ namespace: devops-tools
 # ── Image Spring App ───────────────────────────────────────
 image:
   repository: esprit/student-management
-  tag: latest
+  tag: "1.0.0"
   pullPolicy: IfNotPresent
 
 # ── Application Spring Boot ────────────────────────────────
@@ -17,6 +17,7 @@ app:
   port: 8089
   contextPath: /student
   replicas: 2
+  corsAllowedOrigins: "http://localhost:4200"
   resources:
     requests:
       memory: "512Mi"
@@ -28,10 +29,11 @@ app:
 
 # ── MySQL ──────────────────────────────────────────────────
 mysql:
-  image: mysql:8.0
+  image: mysql:8.0.42
   database: studentdb
   username: spring
   password: "" # Set via Jenkins or external secret
+  rootPassword: "" # Set via Jenkins or external secret
   port: 3306
   storage: 1Gi
   resources:
@@ -47,7 +49,7 @@ mysql:
 
 # ── Prometheus ─────────────────────────────────────────────
 prometheus:
-  image: prom/prometheus:latest
+  image: prom/prometheus:v3.5.0
   port: 9090
   nodePort: 30090
   scrapeInterval: 15s
@@ -77,8 +79,13 @@ grafana:
 
 # ── Hosts Ingress ──────────────────────────────────────────
 ingress:
+  className: nginx
   apiHost: api.student.local
   grafanaHost: grafana.student.local
+
+monitoring:
+  cadvisor:
+    enabled: false
 
 # ── Hôtes externes (Jenkins, SonarQube, VM) ────────────────
 external:

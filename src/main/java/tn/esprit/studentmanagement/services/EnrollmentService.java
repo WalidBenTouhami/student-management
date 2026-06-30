@@ -38,6 +38,10 @@ public class EnrollmentService implements IEnrollment {
 
     @Override
     public EnrollmentDTO saveEnrollment(EnrollmentDTO enrollmentDTO) {
+        if (enrollmentDTO.getIdEnrollment() != null
+                && !enrollmentRepository.existsById(enrollmentDTO.getIdEnrollment())) {
+            throw new ResourceNotFoundException("Enrollment not found with ID: " + enrollmentDTO.getIdEnrollment());
+        }
         Enrollment enrollment = dtoMapper.toEnrollmentEntity(java.util.Objects.requireNonNull(enrollmentDTO));
         enrollment = enrollmentRepository.save(enrollment);
         return dtoMapper.toEnrollmentDTO(enrollment);

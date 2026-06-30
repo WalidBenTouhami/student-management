@@ -38,6 +38,12 @@ public class StudentService implements IStudentService {
     
     @Override
     public StudentDTO saveStudent(StudentDTO studentDTO) {
+        if (studentDTO.getIdStudent() != null && !studentRepository.existsById(studentDTO.getIdStudent())) {
+            throw new ResourceNotFoundException("Student not found with ID: " + studentDTO.getIdStudent());
+        }
+        if (studentDTO.getIdStudent() == null && studentRepository.existsByEmail(studentDTO.getEmail())) {
+            throw new IllegalArgumentException("A student with this email already exists.");
+        }
         Student student = dtoMapper.toStudentEntity(java.util.Objects.requireNonNull(studentDTO));
         student = studentRepository.save(student);
         return dtoMapper.toStudentDTO(student);

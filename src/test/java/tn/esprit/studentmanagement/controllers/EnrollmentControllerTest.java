@@ -13,6 +13,8 @@ import tn.esprit.studentmanagement.dto.EnrollmentDTO;
 import tn.esprit.studentmanagement.services.IEnrollment;
 
 import java.util.Arrays;
+import java.time.LocalDate;
+import tn.esprit.studentmanagement.entities.Status;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -30,7 +32,7 @@ class EnrollmentControllerTest {
     @InjectMocks
     private EnrollmentController enrollmentController;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @BeforeEach
     void setUp() {
@@ -68,6 +70,10 @@ class EnrollmentControllerTest {
     void testCreateEnrollment() throws Exception {
         EnrollmentDTO e1 = new EnrollmentDTO();
         e1.setGrade(15.5);
+        e1.setEnrollmentDate(LocalDate.now());
+        e1.setStatus(Status.ACTIVE);
+        e1.setStudentId(1L);
+        e1.setCourseId(1L);
         when(enrollmentService.saveEnrollment(any(EnrollmentDTO.class))).thenReturn(e1);
 
         mockMvc.perform(post("/enrollments")
@@ -83,6 +89,10 @@ class EnrollmentControllerTest {
     void testUpdateEnrollment() throws Exception {
         EnrollmentDTO e1 = new EnrollmentDTO();
         e1.setGrade(15.5);
+        e1.setEnrollmentDate(LocalDate.now());
+        e1.setStatus(Status.ACTIVE);
+        e1.setStudentId(1L);
+        e1.setCourseId(1L);
         when(enrollmentService.saveEnrollment(any(EnrollmentDTO.class))).thenReturn(e1);
 
         mockMvc.perform(put("/enrollments/1")

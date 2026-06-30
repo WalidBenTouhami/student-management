@@ -1,49 +1,21 @@
-# ============================================================
-# 🐳 DOCKERFILE - STUDENT MANAGEMENT
-# ============================================================
+FROM maven:3.9.11-eclipse-temurin-25 AS build
+WORKDIR /workspace
+COPY pom.xml mvnw ./
+COPY .mvn .mvn
+RUN ./mvnw dependency:go-offline --no-transfer-progress
+COPY src src
+RUN ./mvnw clean package -DskipTests --no-transfer-progress
 
-# Image de base Java 25
-FROM eclipse-temurin:25-jre-jammy
+FROM eclipse-temurin:25-jre
+LABEL org.opencontainers.image.title="Student Management"
+LABEL org.opencontainers.image.source="https://github.com/WalidBenTouhami/student-management"
 
-# Labels pour identification
-LABEL maintainer="devops@esprit.tn"
-LABEL version="1.0.0"
-LABEL description="Student Management Application"
+RUN groupadd --system spring \
+    && useradd --system --gid spring --home-dir /app spring
+WORKDIR /app
+COPY --from=build --chown=spring:spring /workspace/target/student-management-*.jar app.jar
 
-# Variables d'environnement
-ENV JAVA_OPTS="-Xmx512m -Xms256m"
-ENV APP_HOME=/app
-ENV SPRING_PROFILES_ACTIVE=prod
-
-# Création du répertoire de travail
-WORKDIR ${APP_HOME}
-
-# Installation des outils utiles
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Création d'un utilisateur non-root
-RUN groupadd -r spring && useradd -r -g spring spring
-
-# Copie du JAR
-COPY target/student-management-*.jar app.jar
-
-# Copie des fichiers de configuration (si nécessaire)
-# COPY src/main/resources/application.properties ${APP_HOME}/config/
-
-# Changement des permissions
-RUN chown -R spring:spring ${APP_HOME}
-
-# Passage à l'utilisateur non-root
 USER spring
-
-# Exposition du port
 EXPOSE 8089
-
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8089/student/actuator/health || exit 1
-
-# Point d'entrée
-ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar app.jar"]
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseContainerSupport"
+ENTRYPOINT ["sh", "-c", "exec java ${JAVA_OPTS} -jar app.jar"]

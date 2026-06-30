@@ -6,6 +6,7 @@ import tn.esprit.studentmanagement.dto.EnrollmentDTO;
 import tn.esprit.studentmanagement.services.IEnrollment;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/enrollments")
@@ -28,12 +29,12 @@ public class EnrollmentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public EnrollmentDTO createEnrollment(@RequestBody EnrollmentDTO enrollment) {
+    public EnrollmentDTO createEnrollment(@Valid @RequestBody EnrollmentDTO enrollment) {
         return enrollmentService.saveEnrollment(enrollment);
     }
 
     @PutMapping("/{id}")
-    public EnrollmentDTO updateEnrollment(@PathVariable Long id, @RequestBody EnrollmentDTO enrollment) {
+    public EnrollmentDTO updateEnrollment(@PathVariable Long id, @Valid @RequestBody EnrollmentDTO enrollment) {
         enrollment.setIdEnrollment(id);
         return enrollmentService.saveEnrollment(enrollment);
     }

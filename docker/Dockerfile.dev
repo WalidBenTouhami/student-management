@@ -3,7 +3,7 @@
 # ============================================================
 
 # Image de base avec Maven pour le développement
-FROM maven:3.9.9-eclipse-temurin-25
+FROM maven:3.9.11-eclipse-temurin-25
 
 # Labels
 LABEL maintainer="devops@esprit.tn"
@@ -21,10 +21,10 @@ COPY pom.xml .
 COPY src ./src
 
 # Compilation avec Maven
-RUN mvn clean compile
+RUN mvn dependency:go-offline --no-transfer-progress
 
 # Exposition du port
 EXPOSE 8089
 
 # Point d'entrée pour le développement (hot reload)
-ENTRYPOINT ["mvn", "spring-boot:run"]
+ENTRYPOINT ["mvn", "spring-boot:run", "--no-transfer-progress"]

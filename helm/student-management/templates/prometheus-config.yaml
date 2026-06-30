@@ -25,33 +25,8 @@ data:
         static_configs:
           - targets: ['mysql-service:{{ .Values.mysql.exporter.port }}']
 
-      # ============================================================
-      # CADVISOR ✅ UP
-      # ============================================================
+      {{ if .Values.monitoring.cadvisor.enabled }}
       - job_name: 'cadvisor'
         static_configs:
           - targets: ['cadvisor:8080']
-
-      # ============================================================
-      # SONARQUBE ✅ Réactivé — admin:0000
-      # ============================================================
-      - job_name: 'sonarqube'
-        metrics_path: '/api/monitoring/metrics'
-        basic_auth:
-          username: 'admin'
-          password: '{{ .Values.external.sonarAdminPassword }}'
-        static_configs:
-          - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.sonarPort }}']
-
-      # ============================================================
-      # JENKINS ❌ DÉSACTIVÉ — Plugin "Prometheus Metrics" non installé
-      # ACTION REQUISE : Jenkins > Manage Plugins > "Prometheus Metrics" > Install
-      # Puis décommenter ce bloc et relancer helm upgrade
-      # ============================================================
-      # - job_name: 'jenkins'
-      #   metrics_path: '/prometheus'
-      #   basic_auth:
-      #     username: 'admin'
-      #     password: '{{ .Values.external.jenkinsMetricsToken }}'
-      #   static_configs:
-      #     - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.jenkinsPort }}']
+      {{ end }}
