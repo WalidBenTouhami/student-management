@@ -6,12 +6,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spring-app
-  namespace: devops-tools
+  namespace: {{ .Values.namespace }}
   labels:
     app: spring-app
     version: v1
 spec:
-  replicas: 2
+  replicas: {{ .Values.app.replicas }}
   selector:
     matchLabels:
       app: spring-app
@@ -31,13 +31,13 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 8089
+            - containerPort: {{ .Values.app.port }}
               name: http
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "prod"
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://mysql-service:3306/studentdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+              value: "jdbc:mysql://mysql-service:{{ .Values.mysql.port }}/{{ .Values.mysql.database }}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -50,24 +50,32 @@ spec:
                   key: SPRING_DATASOURCE_PASSWORD
           resources:
             limits:
-              memory: "1Gi"
-              cpu: "500m"
+              memory: {{ .Values.app.resources.limits.memory }}
+              cpu: {{ .Values.app.resources.limits.cpu }}
             requests:
-              memory: "512Mi"
-              cpu: "250m"
+              memory: {{ .Values.app.resources.requests.memory }}
+              cpu: {{ .Values.app.resources.requests.cpu }}
+          # startupProbe donne jusqu'à 120s (12 × 10s) à l'app pour démarrer
+          # avant que liveness commence à vérifier — essentiel pour les JVM lentes
+          startupProbe:
+            httpGet:
+              path: {{ .Values.app.contextPath }}/actuator/health
+              port: {{ .Values.app.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
           livenessProbe:
             httpGet:
-              path: /student/actuator/health
-              port: 8089
-            initialDelaySeconds: 45
-            periodSeconds: 10
+              path: {{ .Values.app.contextPath }}/actuator/health
+              port: {{ .Values.app.port }}
+            periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /student/actuator/health
-              port: 8089
-            initialDelaySeconds: 45
+              path: {{ .Values.app.contextPath }}/actuator/health
+              port: {{ .Values.app.port }}
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3

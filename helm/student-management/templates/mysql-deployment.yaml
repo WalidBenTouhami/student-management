@@ -6,7 +6,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
-  namespace: devops-tools
+  namespace: {{ .Values.namespace }}
   labels:
     app: mysql
 spec:
@@ -21,10 +21,10 @@ spec:
     spec:
       containers:
         - name: mysql
-          image: mysql:8.0
+          image: {{ .Values.mysql.image }}
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 3306
+            - containerPort: {{ .Values.mysql.port }}
               name: mysql
           env:
             - name: MYSQL_ROOT_PASSWORD
@@ -33,7 +33,7 @@ spec:
                   name: app-secrets
                   key: SPRING_DATASOURCE_PASSWORD
             - name: MYSQL_DATABASE
-              value: "studentdb"
+              value: {{ .Values.mysql.database | quote }}
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
@@ -49,29 +49,57 @@ spec:
               mountPath: /var/lib/mysql
           resources:
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: {{ .Values.mysql.resources.limits.memory }}
+              cpu: {{ .Values.mysql.resources.limits.cpu }}
             requests:
-              memory: "256Mi"
-              cpu: "250m"
+              memory: {{ .Values.mysql.resources.requests.memory }}
+              cpu: {{ .Values.mysql.resources.requests.cpu }}
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD}"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "mysql -h localhost -u root -p${MYSQL_ROOT_PASSWORD} -e 'SELECT 1'"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
         - name: mysqld-exporter
-          image: prom/mysqld-exporter:v0.14.0
+          image: {{ .Values.mysql.exporter.image }}
           ports:
-            - containerPort: 9104
+            - containerPort: {{ .Values.mysql.exporter.port }}
               name: metrics
           env:
-            - name: DB_USER
+            - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
                   key: SPRING_DATASOURCE_USERNAME
-            - name: DB_PASS
+            - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
                   key: SPRING_DATASOURCE_PASSWORD
+            # Fix: format correct pour mysqld-exporter v0.14+
             - name: DATA_SOURCE_NAME
-              value: "$(DB_USER):$(DB_PASS)@(localhost:3306)/"
+              value: "$(MYSQL_USER):$(MYSQL_PASSWORD)@(localhost:{{ .Values.mysql.port }})/"
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+            limits:
+              memory: "64Mi"
+              cpu: "100m"
       volumes:
         - name: mysql-storage
           persistentVolumeClaim:

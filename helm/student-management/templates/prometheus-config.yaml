@@ -2,12 +2,12 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: devops-tools
+  namespace: {{ .Values.namespace }}
 data:
   prometheus.yml: |
     global:
-      scrape_interval: 15s
-      evaluation_interval: 15s
+      scrape_interval: {{ .Values.prometheus.scrapeInterval }}
+      evaluation_interval: {{ .Values.prometheus.evaluationInterval }}
 
     scrape_configs:
       # ============================================================
@@ -17,24 +17,24 @@ data:
         metrics_path: '/prometheus/'
         basic_auth:
           username: 'prometheus-token'
-          password: '11fd280a42943b4f20184833083de7e3c8'
+          password: '{{ .Values.external.jenkinsMetricsToken }}'
         static_configs:
-          - targets: ['192.168.56.10:8080']
+          - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.jenkinsPort }}']
 
       # ============================================================
       # SPRING BOOT APP (Sur K8s)
       # ============================================================
       - job_name: 'spring-app'
-        metrics_path: '/student/actuator/prometheus'
+        metrics_path: '{{ .Values.app.contextPath }}/actuator/prometheus'
         static_configs:
-          - targets: ['spring-service:8089']
+          - targets: ['spring-service:{{ .Values.app.port }}']
 
       # ============================================================
       # MYSQL
       # ============================================================
       - job_name: 'mysql'
         static_configs:
-          - targets: ['mysql-service:9104']
+          - targets: ['mysql-service:{{ .Values.mysql.exporter.port }}']
 
       # ============================================================
       # CADVISOR (Containers)
@@ -49,7 +49,7 @@ data:
       - job_name: 'sonarqube'
         metrics_path: '/api/monitoring/metrics'
         basic_auth:
-          username: 'sqa_8186ec2bc2572e08ad1a14abb33e5c2b734a033e'
+          username: '{{ .Values.external.sonarToken }}'
           password: ''
         static_configs:
-          - targets: ['192.168.56.10:9000']
+          - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.sonarPort }}']

@@ -1,6 +1,89 @@
+# ============================================================
+# 📦 values.yaml — Configuration centralisée du Helm Chart
+# Modifiez ici pour adapter l'environnement sans toucher aux templates
+# ============================================================
+
+# ── Namespace ──────────────────────────────────────────────
+namespace: devops-tools
+
+# ── Image Spring App ───────────────────────────────────────
 image:
   repository: esprit/student-management
   tag: latest
   pullPolicy: IfNotPresent
 
-namespace: devops-tools
+# ── Application Spring Boot ────────────────────────────────
+app:
+  port: 8089
+  contextPath: /student
+  replicas: 2
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  nodePort: 30080
+
+# ── MySQL ──────────────────────────────────────────────────
+mysql:
+  image: mysql:8.0
+  database: studentdb
+  username: spring
+  password: spring123
+  port: 3306
+  storage: 1Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  exporter:
+    image: prom/mysqld-exporter:v0.14.0
+    port: 9104
+
+# ── Prometheus ─────────────────────────────────────────────
+prometheus:
+  image: prom/prometheus:latest
+  port: 9090
+  nodePort: 30090
+  scrapeInterval: 15s
+  evaluationInterval: 15s
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+# ── Grafana ────────────────────────────────────────────────
+grafana:
+  image: grafana/grafana:10.4.3
+  port: 3000
+  nodePort: 30300
+  adminUser: admin
+  adminPassword: admin
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+# ── Hosts Ingress ──────────────────────────────────────────
+ingress:
+  apiHost: api.student.local
+  grafanaHost: grafana.student.local
+
+# ── Hôtes externes (Jenkins, SonarQube, VM) ────────────────
+external:
+  vmHost: "192.168.56.10"
+  jenkinsPort: "8080"
+  sonarPort: "9000"
+  jenkinsMetricsToken: "11fd280a42943b4f20184833083de7e3c8"
+  sonarToken: "sqa_8186ec2bc2572e08ad1a14abb33e5c2b734a033e"
