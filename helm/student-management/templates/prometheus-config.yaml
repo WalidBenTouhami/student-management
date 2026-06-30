@@ -11,18 +11,7 @@ data:
 
     scrape_configs:
       # ============================================================
-      # JENKINS — basic_auth: username=admin, password=jenkins_api_token
-      # ============================================================
-      - job_name: 'jenkins'
-        metrics_path: '/prometheus'
-        basic_auth:
-          username: 'admin'
-          password: '{{ .Values.external.jenkinsMetricsToken }}'
-        static_configs:
-          - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.jenkinsPort }}']
-
-      # ============================================================
-      # SPRING BOOT APP (Sur K8s)
+      # SPRING BOOT APP (Sur K8s) ✅ UP
       # ============================================================
       - job_name: 'spring-app'
         metrics_path: '{{ .Values.app.contextPath }}/actuator/prometheus'
@@ -30,26 +19,42 @@ data:
           - targets: ['spring-service:{{ .Values.app.port }}']
 
       # ============================================================
-      # MYSQL
+      # MYSQL ✅ UP
       # ============================================================
       - job_name: 'mysql'
         static_configs:
           - targets: ['mysql-service:{{ .Values.mysql.exporter.port }}']
 
       # ============================================================
-      # CADVISOR (Containers)
+      # CADVISOR ✅ UP
       # ============================================================
       - job_name: 'cadvisor'
         static_configs:
           - targets: ['cadvisor:8080']
 
       # ============================================================
-      # SONARQUBE — /api/monitoring/metrics requiert admin ou passcode système
+      # JENKINS ❌ DÉSACTIVÉ — Plugin "Prometheus Metrics" non installé
+      # ACTION REQUISE : Installer le plugin depuis Jenkins > Manage Plugins
+      # Puis décommenter ce bloc et relancer helm upgrade
       # ============================================================
-      - job_name: 'sonarqube'
-        metrics_path: '/api/monitoring/metrics'
-        basic_auth:
-          username: 'admin'
-          password: '{{ .Values.external.sonarAdminPassword }}'
-        static_configs:
-          - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.sonarPort }}']
+      # - job_name: 'jenkins'
+      #   metrics_path: '/prometheus'
+      #   basic_auth:
+      #     username: 'admin'
+      #     password: '{{ .Values.external.jenkinsMetricsToken }}'
+      #   static_configs:
+      #     - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.jenkinsPort }}']
+
+      # ============================================================
+      # SONARQUBE ❌ DÉSACTIVÉ — Mot de passe admin inconnu (HTTP 401)
+      # ACTION REQUISE : Réinitialiser le mot de passe admin SonarQube
+      # puis mettre à jour values.yaml > external.sonarAdminPassword
+      # et relancer helm upgrade
+      # ============================================================
+      # - job_name: 'sonarqube'
+      #   metrics_path: '/api/monitoring/metrics'
+      #   basic_auth:
+      #     username: 'admin'
+      #     password: '{{ .Values.external.sonarAdminPassword }}'
+      #   static_configs:
+      #     - targets: ['{{ .Values.external.vmHost }}:{{ .Values.external.sonarPort }}']

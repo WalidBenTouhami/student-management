@@ -1,53 +1,49 @@
 #!/bin/bash
-# deep-fix.sh — Corriger les tokens Jenkins et SonarQube
+# auth-test.sh — Tester les credentials Jenkins et SonarQube
 
-MKIP=$(minikube ip 2>/dev/null)
-
-echo "=== 1. Spring Boot: trouver les vraies routes ==="
-# Activer les mappings dans actuator si pas exposé
-curl -sf --max-time 8 "http://$MKIP:30080/student/actuator" | python3 -m json.tool 2>/dev/null | grep -E '"href"' | head -20
+echo "=== Restart Prometheus pour recharger la ConfigMap ==="
+kubectl rollout restart deployment/prometheus -n devops-tools
+echo "Attente 15s..."
+sleep 15
 
 echo ""
-echo "=== 2. Tester routes Spring Boot API ==="
-for route in "/student/api/students" "/student/api/student" "/student/student" "/student/students" "/student/api/enrollment" "/student/api/enrollments"; do
-  code=$(curl -sf --max-time 5 "http://$MKIP:30080$route" -o /dev/null -w "%{http_code}")
-  echo "  $route -> HTTP $code"
+echo "=== Test Jenkins Prometheus endpoint ==="
+echo "--- admin:apitoken (sans slash final) ---"
+curl -v --max-time 8 \
+  -u "admin:11fd280a42943b4f20184833083de7e3c8" \
+  "http://192.168.56.10:8080/prometheus" 2>&1 | grep -E "^< HTTP|WWW-Authenticate|Unauthorized"
+
+echo ""
+echo "--- Test si le plugin Prometheus est installé ---"
+curl -sf --max-time 8 -u "admin:11fd280a42943b4f20184833083de7e3c8" \
+  "http://192.168.56.10:8080/api/json?tree=jobs[name]" -o /dev/null -w "Jenkins API: HTTP %{http_code}\n"
+
+echo ""
+echo "=== Test SonarQube /api/monitoring/metrics ==="
+for pass in admin sonar esprit admin123 walid@123; do
+  code=$(curl -sf --max-time 5 -u "admin:$pass" \
+    "http://192.168.56.10:9000/api/monitoring/metrics" \
+    -o /dev/null -w "%{http_code}")
+  echo "  admin:$pass -> HTTP $code"
 done
 
 echo ""
-echo "=== 3. Jenkins: trouver le bon utilisateur pour le token Prometheus ==="
-# Le token Jenkins doit être au format user:apitoken
-# Testons avec admin:token
-curl -sf --max-time 8 \
-  -u "admin:11fd280a42943b4f20184833083de7e3c8" \
-  "http://192.168.56.10:8080/prometheus/" -o /dev/null -w "admin:token -> HTTP %{http_code}\n"
-
-# Testons aussi sans auth (possible si configuré)
-curl -sf --max-time 8 \
-  "http://192.168.56.10:8080/metrics" -o /dev/null -w "/metrics (no auth) -> HTTP %{http_code}\n"
-
-echo ""
-echo "=== 4. SonarQube: vérifier l'endpoint monitoring et les permissions ==="
-# Le token sqa_ est un token de service — vérifier les permissions
-curl -sf --max-time 8 \
-  -H "Authorization: Bearer sqa_8186ec2bc2572e08ad1a14abb33e5c2b734a033e" \
-  "http://192.168.56.10:9000/api/authentication/validate" -w "\nHTTP: %{http_code}\n"
-
-echo ""
-# Vérifier si le token est valide avec une API simple
-curl -sf --max-time 8 \
-  -H "Authorization: Bearer sqa_8186ec2bc2572e08ad1a14abb33e5c2b734a033e" \
-  "http://192.168.56.10:9000/api/projects/search" -o /dev/null -w "projects/search -> HTTP %{http_code}\n"
-
-# /api/monitoring/metrics nécessite le rôle "Execute Analysis" ou admin global
-curl -sf --max-time 8 \
-  -u "admin:admin" \
-  "http://192.168.56.10:9000/api/monitoring/metrics" -w "\nadmin:admin -> HTTP %{http_code}\n" | tail -3
+echo "=== Vérifier les scrape targets Prometheus (après restart) ==="
+MKIP=$(minikube ip 2>/dev/null)
+sleep 5
+curl -sf --max-time 8 "http://$MKIP:30090/api/v1/targets" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for t in data.get('data', {}).get('activeTargets', []):
+    health = t.get('health', '?')
+    job    = t.get('labels', {}).get('job', '?')
+    url    = t.get('scrapeUrl', '?')
+    err    = t.get('lastError', '')
+    icon   = '[OK] ' if health == 'up' else '[DOWN]'
+    print(f'  {icon} {job:20s} {url}')
+    if err:
+        print(f'         Error: {err}')
+" 2>/dev/null
 
 echo ""
-echo "=== 5. SonarQube: version et passcode system ===" 
-curl -sf --max-time 8 "http://192.168.56.10:9000/api/system/info" \
-  -H "Authorization: Bearer sqa_8186ec2bc2572e08ad1a14abb33e5c2b734a033e" \
-  -o /dev/null -w "system/info with token -> HTTP %{http_code}\n"
-
 echo "=== DONE ==="
