@@ -10,12 +10,12 @@ echo ""
 echo "=== Test Jenkins Prometheus endpoint ==="
 echo "--- admin:apitoken (sans slash final) ---"
 curl -v --max-time 8 \
-  -u "admin:11fd280a42943b4f20184833083de7e3c8" \
+  -u "admin:${JENKINS_TOKEN:-<INSERT_JENKINS_TOKEN>}" \
   "http://192.168.56.10:8080/prometheus" 2>&1 | grep -E "^< HTTP|WWW-Authenticate|Unauthorized"
 
 echo ""
 echo "--- Test si le plugin Prometheus est installé ---"
-curl -sf --max-time 8 -u "admin:11fd280a42943b4f20184833083de7e3c8" \
+curl -sf --max-time 8 -u "admin:${JENKINS_TOKEN:-<INSERT_JENKINS_TOKEN>}" \
   "http://192.168.56.10:8080/api/json?tree=jobs[name]" -o /dev/null -w "Jenkins API: HTTP %{http_code}\n"
 
 echo ""
