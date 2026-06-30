@@ -70,10 +70,10 @@ Vagrant.configure("2") do |config|
     CYAN='\033[0;36m'
     NC='\033[0m'
 
-    MYSQL_ROOT_PASSWORD="root123"
+    MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
     MYSQL_DATABASE="studentdb"
     MYSQL_USER="spring"
-    MYSQL_PASSWORD="spring123"
+    MYSQL_PASSWORD=$(openssl rand -base64 12)
 
     LOG_FILE="/home/vagrant/provision.log"
     touch $LOG_FILE
@@ -264,7 +264,7 @@ spring.datasource.password=$MYSQL_PASSWORD
 
 # JPA Configuration
 spring.jpa.show-sql=true
-spring.jpa.hibernate.ddl-auto=update
+spring.jpa.hibernate.ddl-auto=validate
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
 spring.jpa.properties.hibernate.format_sql=true
 
@@ -421,11 +421,11 @@ MySQL: jdbc:mysql://192.168.56.10:3306
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CREDENTIALS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Jenkins Initial: sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-SonarQube: admin / admin
-Grafana: admin / admin
-MySQL Root: root / $MYSQL_ROOT_PASSWORD
-MySQL App: $MYSQL_USER / $MYSQL_PASSWORD
+Jenkins Initial: [PROTECTED]
+SonarQube: admin / [PROTECTED]
+Grafana: admin / [PROTECTED]
+MySQL Root: root / [PROTECTED]
+MySQL App: $MYSQL_USER / [PROTECTED]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INTELLIJ IDEA CONFIGURATION
@@ -562,7 +562,7 @@ EOF
     sudo systemctl enable docker
     sudo usermod -aG docker vagrant
     sudo usermod -aG docker jenkins 2>/dev/null || true
-    sudo chmod 666 /var/run/docker.sock
+    # sudo chmod 666 /var/run/docker.sock # Removed for security
 
     docker --version 2>&1 | tee -a $LOG_FILE
 
@@ -588,7 +588,7 @@ EOF
     sudo mysql -u root -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON $MYSQL_DATABASE.* TO '$MYSQL_USER'@'%';" 2>&1 | tee -a $LOG_FILE
     sudo mysql -u root -p$MYSQL_ROOT_PASSWORD -e "FLUSH PRIVILEGES;" 2>&1 | tee -a $LOG_FILE
 
-    sudo sed -i "s/bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
+    sudo sed -i "s/bind-address.*/bind-address = 127.0.0.1/" /etc/mysql/mysql.conf.d/mysqld.cnf
     sudo systemctl restart mysql
 
     check_service mysql
@@ -628,10 +628,10 @@ EOF
 
     log_section "🐳 TÉLÉCHARGEMENT DES IMAGES DOCKER"
 
-    docker pull hello-world:latest 2>&1 | tee -a $LOG_FILE
-    docker pull mysql:8.0 2>&1 | tee -a $LOG_FILE
+    docker pull hello-world:linux 2>&1 | tee -a $LOG_FILE
+    docker pull mysql:8.0.42 2>&1 | tee -a $LOG_FILE
     docker pull sonarqube:25.4.0 2>&1 | tee -a $LOG_FILE
-    docker pull prom/prometheus:latest 2>&1 | tee -a $LOG_FILE
+    docker pull prom/prometheus:v3.5.0 2>&1 | tee -a $LOG_FILE
     docker pull grafana/grafana:11.5.0 2>&1 | tee -a $LOG_FILE
     docker pull jenkins/jenkins:lts-jdk25 2>&1 | tee -a $LOG_FILE
 
@@ -682,11 +682,11 @@ EOF
 
     🔑 CREDENTIALS :
     ----------------
-    Jenkins    : sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-    SonarQube  : admin / admin
-    Grafana    : admin / admin
-    MySQL Root : root / $MYSQL_ROOT_PASSWORD
-    MySQL App  : $MYSQL_USER / $MYSQL_PASSWORD
+    Jenkins    : [PROTECTED]
+    SonarQube  : admin / [PROTECTED]
+    Grafana    : admin / [PROTECTED]
+    MySQL Root : root / [PROTECTED]
+    MySQL App  : $MYSQL_USER / [PROTECTED]
 
     📁 INTELLIJ CONFIGURATION :
     ---------------------------
@@ -702,7 +702,7 @@ EOF
     cat /home/vagrant/devops_report.txt  # Voir le rapport
 
     🐳 Démarrer les services :
-    docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=root123 -e MYSQL_DATABASE=studentdb -p 3306:3306 mysql
+    docker run -d --name mysql -e MYSQL_ROOT_PASSWORD=[PROTECTED] -e MYSQL_DATABASE=studentdb -p 127.0.0.1:3306:3306 mysql:8.0.42
 EOF
   SHELL
 

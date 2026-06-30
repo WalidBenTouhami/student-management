@@ -5,6 +5,11 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.apiHost }}
+        - {{ .Values.ingress.grafanaHost }}
+      secretName: student-management-tls
   rules:
     - host: {{ .Values.ingress.apiHost }}
       http:

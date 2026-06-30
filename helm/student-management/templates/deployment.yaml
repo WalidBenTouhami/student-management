@@ -87,14 +87,14 @@ spec:
             failureThreshold: 12
           livenessProbe:
             httpGet:
-              path: {{ .Values.app.contextPath }}/actuator/health/readiness
+              path: {{ .Values.app.contextPath }}/actuator/health/liveness
               port: {{ .Values.app.port }}
             periodSeconds: 15
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: {{ .Values.app.contextPath }}/actuator/health
+              path: {{ .Values.app.contextPath }}/actuator/health/readiness
               port: {{ .Values.app.port }}
             periodSeconds: 10
             timeoutSeconds: 5
