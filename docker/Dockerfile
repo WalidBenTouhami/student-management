@@ -3,7 +3,7 @@
 # ============================================================
 
 # Image de base Java 25
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 
 # Labels pour identification
 LABEL maintainer="devops@esprit.tn"
