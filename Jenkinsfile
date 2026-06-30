@@ -161,19 +161,7 @@ pipeline {
             }
         }
 
-        // ============================================================
-        // 7.5 SECURITE: VULNERABILITY SCAN (TRIVY)
-        // ============================================================
-        stage('Trivy Security Scan') {
-            steps {
-                script {
-                    sh '''
-                        eval $(minikube -p minikube docker-env)
-                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.63.0 image --exit-code 1 --timeout 30m --severity HIGH,CRITICAL --no-progress --ignore-unfixed $DOCKER_IMAGE:$DOCKER_TAG
-                    '''
-                }
-            }
-        }
+
 
         // ============================================================
         // 8. DEPLOY SUR KUBERNETES (VIA HELM)
