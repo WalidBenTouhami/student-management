@@ -1,0 +1,25 @@
+# ==============================================================================
+# Configuration pour devops-menu.sh
+# ==============================================================================
+
+# Infrastructure
+VM_IP="192.168.56.10"
+NAMESPACE="devops-tools"
+APP_DEPLOYMENT_NAME="spring-app"
+DB_DEPLOYMENT_NAME="mysql-deployment"
+DB_LABEL="app=mysql"
+HELM_RELEASE_NAME="student-management"
+HELM_CHART_PATH="/vagrant/helm/student-management"
+
+# Ports des services
+JENKINS_PORT="8088"
+SONAR_PORT="9000"
+GRAFANA_PORT="3000"
+PROMETHEUS_PORT="9090"
+API_PORT="30089"
+
+# Dossiers
+BACKUP_DIR="./backups"
+LOGS_DIR="./logs"
+AUDITS_DIR="./audits"
+DEMOS_DIR="./demos"
