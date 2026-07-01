@@ -125,7 +125,11 @@ open_terminal() {
 }
 
 vm_exec() {
-    vagrant ssh -c "$1" 2>/dev/null
+    if [[ "$(hostname)" == "devops-vm" ]]; then
+        bash -c "$1"
+    else
+        vagrant ssh -c "$1" 2>/dev/null
+    fi
 }
 
 pause() {
@@ -138,12 +142,16 @@ pause() {
 check_prerequisites() {
     log "INFO" "Vérification des prérequis."
     local MISSING=0
-    for cmd in vagrant git curl; do
+    for cmd in git curl; do
         if ! command -v $cmd &> /dev/null; then
             print_error "$cmd n'est pas installé ou n'est pas dans le PATH."
             MISSING=1
         fi
     done
+    if [[ "$(hostname)" != "devops-vm" ]] && ! command -v vagrant &> /dev/null; then
+        print_error "vagrant n'est pas installé ou n'est pas dans le PATH."
+        MISSING=1
+    fi
     if [ $MISSING -eq 1 ]; then
         print_error "Outils vitaux manquants. Arrêt."
         exit 1
@@ -169,7 +177,11 @@ cmd_stop_env() {
 cmd_status() {
     print_info "Vérification de l'état des services..."
     echo -e "${BLUE}--- État de Vagrant ---${NC}"
-    vagrant status | grep -E "running|saved|poweroff|aborted" || true
+    if [[ "$(hostname)" != "devops-vm" ]]; then
+        vagrant status | grep -E "running|saved|poweroff|aborted" || true
+    else
+        echo "Exécuté depuis l'intérieur de la VM (devops-vm)."
+    fi
     echo -e "\n${BLUE}--- État des Pods Kubernetes ---${NC}"
     vm_exec "kubectl get pods -n $NAMESPACE" || true
 }
@@ -292,7 +304,7 @@ cmd_restore() {
         print_error "Aucun backup."
         return 1
     fi
-    for i in "${!backups[@]}"; do echo "$((i+1)). $(basename "${backups[$i]")"; done
+    for i in "${!backups[@]}"; do echo "$((i+1)). $(basename "${backups[$i]}")"; done
     if [ -z "${NON_INTERACTIVE:-}" ]; then
         read -p "Choix : " choice
         if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -gt 0 ] && [ "$choice" -le "${#backups[@]}" ]; then
@@ -320,7 +332,7 @@ cmd_smoke_tests() {
 cmd_advanced_cleanup() {
     print_info "Nettoyage..."
     vm_exec "kubectl delete pods --field-selector status.phase=Failed -n $NAMESPACE" || true
-    vm_exec "eval \$(minikube docker-env) && docker image prune -a -f" || true
+    vm_exec "eval \$(minikube -p minikube docker-env 2>/dev/null || minikube docker-env) && docker image prune -a -f" || true
     print_success "Nettoyage terminé."
 }
 
@@ -362,7 +374,7 @@ cmd_audit() {
     local REPORT_FILE="${AUDITS_DIR}/audit_report_$(date +%Y%m%d_%H%M%S).txt"
     {
         echo "RAPPORT D'AUDIT - $(date)"
-        if ! vagrant status | grep -q "running"; then vagrant up || true; fi
+        if [[ "$(hostname)" != "devops-vm" ]] && ! vagrant status | grep -q "running"; then vagrant up || true; fi
         local PODS_FAILS=$(vm_exec "kubectl get pods -n $NAMESPACE --field-selector status.phase=Failed -o name" | tr -d '\r')
         if [ -n "$PODS_FAILS" ]; then vm_exec "kubectl delete pods --field-selector status.phase=Failed -n $NAMESPACE" || true; fi
         local HTTP_CODE=$(curl -m 5 -s -o /dev/null -w "%{http_code}" "$API_HEALTH_URL" || echo "000")
@@ -373,31 +385,31 @@ cmd_audit() {
 
 cmd_ci_build() {
     print_info "🚀 Exécution du build (mvn clean compile)..."
-    vm_exec "cd /vagrant && mvn clean compile" 2>&1 | tee -a "$LOGS_DIR/build_$(date +%Y%m%d).log" || { print_error "Échec du build"; exit 1; }
+    vm_exec "cd /vagrant && chmod +x mvnw && ./mvnw clean compile" 2>&1 | tee -a "$LOGS_DIR/build_$(date +%Y%m%d).log" || { print_error "Échec du build"; exit 1; }
     print_success "Build réussi."
 }
 
 cmd_ci_test() {
     print_info "🚀 Exécution des tests (mvn test jacoco:report)..."
-    vm_exec "cd /vagrant && mvn test jacoco:report" 2>&1 | tee -a "$LOGS_DIR/test_$(date +%Y%m%d).log" || { print_error "Échec des tests"; exit 1; }
+    vm_exec "cd /vagrant && chmod +x mvnw && ./mvnw test jacoco:report" 2>&1 | tee -a "$LOGS_DIR/test_$(date +%Y%m%d).log" || { print_error "Échec des tests"; exit 1; }
     print_success "Tests réussis."
 }
 
 cmd_ci_sonar() {
     print_info "🚀 Analyse SonarQube..."
-    vm_exec "cd /vagrant && mvn sonar:sonar -Dsonar.host.url=http://192.168.56.10:9000 -Dsonar.login=\${SONAR_TOKEN:-}" 2>&1 | tee -a "$LOGS_DIR/sonar_$(date +%Y%m%d).log" || { print_error "Échec SonarQube"; exit 1; }
+    vm_exec "cd /vagrant && chmod +x mvnw && ./mvnw sonar:sonar -Dsonar.host.url=http://192.168.56.10:9000 -Dsonar.login=\${SONAR_TOKEN:-}" 2>&1 | tee -a "$LOGS_DIR/sonar_$(date +%Y%m%d).log" || { print_error "Échec SonarQube"; exit 1; }
     print_success "Analyse SonarQube terminée."
 }
 
 cmd_ci_package() {
     print_info "🚀 Packaging de l'application..."
-    vm_exec "cd /vagrant && mvn package -DskipTests" 2>&1 | tee -a "$LOGS_DIR/package_$(date +%Y%m%d).log" || { print_error "Échec du packaging"; exit 1; }
+    vm_exec "cd /vagrant && chmod +x mvnw && ./mvnw package -DskipTests" 2>&1 | tee -a "$LOGS_DIR/package_$(date +%Y%m%d).log" || { print_error "Échec du packaging"; exit 1; }
     print_success "Package généré."
 }
 
 cmd_docker_build() {
     print_info "🐳 Build de l'image Docker..."
-    vm_exec "cd /vagrant && eval \$(minikube docker-env) && docker build -t esprit/student-management:${DOCKER_TAG} ." 2>&1 | tee -a "$LOGS_DIR/docker-build_$(date +%Y%m%d).log" || { print_error "Échec Docker Build"; exit 1; }
+    vm_exec "cd /vagrant && eval \$(minikube -p minikube docker-env 2>/dev/null || minikube docker-env) && docker build -t esprit/student-management:${DOCKER_TAG} ." 2>&1 | tee -a "$LOGS_DIR/docker-build_$(date +%Y%m%d).log" || { print_error "Échec Docker Build"; exit 1; }
     print_success "Docker Build réussi."
 }
 
@@ -406,7 +418,7 @@ cmd_docker_push() {
     if [ -z "${DOCKER_USERNAME}" ] || [ -z "${DOCKER_PASSWORD}" ]; then
         print_warn "Identifiants Docker non fournis. Le push risque d'échouer."
     fi
-    vm_exec "eval \$(minikube docker-env) && docker tag esprit/student-management:${DOCKER_TAG} ${DOCKER_REGISTRY}/esprit/student-management:${DOCKER_TAG} && echo '${DOCKER_PASSWORD}' | docker login -u '${DOCKER_USERNAME}' --password-stdin && docker push ${DOCKER_REGISTRY}/esprit/student-management:${DOCKER_TAG}" 2>&1 | tee -a "$LOGS_DIR/docker-push_$(date +%Y%m%d).log" || { print_error "Échec Docker Push"; exit 1; }
+    vm_exec "eval \$(minikube -p minikube docker-env 2>/dev/null || minikube docker-env) && docker tag esprit/student-management:${DOCKER_TAG} ${DOCKER_REGISTRY}/esprit/student-management:${DOCKER_TAG} && echo '${DOCKER_PASSWORD}' | docker login -u '${DOCKER_USERNAME}' --password-stdin && docker push ${DOCKER_REGISTRY}/esprit/student-management:${DOCKER_TAG}" 2>&1 | tee -a "$LOGS_DIR/docker-push_$(date +%Y%m%d).log" || { print_error "Échec Docker Push"; exit 1; }
     print_success "Docker Push réussi."
 }
 
