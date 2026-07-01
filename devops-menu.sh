@@ -366,6 +366,91 @@ cmd_audit() {
     print_success "Audit terminé. Rapport: $REPORT_FILE"
 }
 
+cmd_generate_ci_pipeline() {
+    print_info "Génération d'un pipeline CI/CD"
+    echo "1. Jenkins (Declarative Pipeline)"
+    echo "2. GitHub Actions (Workflow)"
+    read -p "Choisissez le type (1 ou 2) : " choice
+    case $choice in
+        1) _generate_jenkins_pipeline ;;
+        2) _generate_github_workflow ;;
+        *) print_error "Choix invalide." ;;
+    esac
+}
+
+_generate_jenkins_pipeline() {
+    if [ -f "Jenkinsfile" ]; then
+        read -p "Jenkinsfile existe déjà. Écraser ? (o/N) " overwrite
+        [[ ! "$overwrite" =~ ^[oO] ]] && return
+    fi
+    cat > Jenkinsfile << 'EOF'
+pipeline {
+    agent any
+    environment {
+        GITHUB_CREDENTIALS = credentials('github-credentials')
+        SONAR_TOKEN = credentials('sonar-token')
+        DOCKER_CREDENTIALS = credentials('dockerhub-credentials')
+    }
+    stages {
+        stage('Build') { steps { sh './devops-menu.sh --action build' } }
+        stage('Test') { steps { sh './devops-menu.sh --action test' } }
+        stage('SonarQube Analysis') { steps { sh './devops-menu.sh --action sonar' } }
+        stage('Package') { steps { sh './devops-menu.sh --action package' } }
+        stage('Docker Build & Deploy') { steps { sh './devops-menu.sh --action deploy' } }
+        stage('Health Check') { steps { sh './devops-menu.sh --action health' } }
+    }
+    post { always { cleanWs() } }
+}
+EOF
+    print_success "Jenkinsfile généré avec succès."
+}
+
+_generate_github_workflow() {
+    mkdir -p .github/workflows
+    if [ -f ".github/workflows/ci.yml" ]; then
+        read -p "Le workflow existe déjà. Écraser ? (o/N) " overwrite
+        [[ ! "$overwrite" =~ ^[oO] ]] && return
+    fi
+    cat > .github/workflows/ci.yml << 'EOF'
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies (Vagrant, kubectl, etc.)
+        run: sudo apt-get update && sudo apt-get install -y vagrant kubectl
+      - name: Run DevOps Menu Script
+        run: |
+          chmod +x devops-menu.sh
+          ./devops-menu.sh --action build
+          ./devops-menu.sh --action test
+          ./devops-menu.sh --action sonar
+          ./devops-menu.sh --action package
+          ./devops-menu.sh --action deploy
+          ./devops-menu.sh --action health
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Archive logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: logs/
+EOF
+    print_success "GitHub Actions workflow généré avec succès."
+}
+
 # ------------------------------------------------------------------------------
 # 5. ARGUMENTS ET MENU
 # ------------------------------------------------------------------------------
@@ -393,6 +478,7 @@ if [ -n "$NON_INTERACTIVE" ]; then
         health) cmd_health ;;
         backup) cmd_backup ;;
         audit) cmd_audit ;;
+        build|test|sonar|package|deploy) print_info "Exécution de l'étape CI/CD simulée : $ACTION" ;;
         *) print_error "Action inconnue"; exit 1 ;;
     esac
     exit 0
@@ -429,9 +515,10 @@ show_menu() {
     echo "20. Nettoyage avancé"
     echo "21. Mettre à jour fichier Hosts DNS"
     echo "22. Ouvrir Tunnel SSH"
-    echo -e "${CYAN}[ DÉMO & AUDIT ]${NC}"
+    echo -e "${CYAN}[ DÉMO, AUDIT & CI/CD ]${NC}"
     echo "23. Enregistrer vidéo démo (2 min)"
     echo "24. Audit & Autoréparation"
+    echo "25. Générer un pipeline CI/CD"
     echo -e "${RED}q. Quitter${NC}"
     echo -e "${BLUE}======================================================${NC}"
 }
@@ -466,6 +553,7 @@ while true; do
         22) cmd_ssh_tunnel ;;
         23) cmd_demo_video ;;
         24) cmd_audit ;;
+        25) cmd_generate_ci_pipeline ;;
         q|Q) print_success "Au revoir !"; exit 0 ;;
         *) print_error "Option invalide." ;;
     esac
