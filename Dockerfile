@@ -1,8 +1,8 @@
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre
 LABEL org.opencontainers.image.title="Student Management"
 LABEL org.opencontainers.image.source="https://github.com/WalidBenTouhami/student-management"
 
-RUN addgroup -g 1001 spring && adduser -u 1001 -S spring -G spring -h /app
+RUN groupadd -g 1001 spring && useradd -u 1001 -g spring -m -s /bin/bash spring
 WORKDIR /app
 COPY --chown=1001:1001 target/*.jar app.jar
 
