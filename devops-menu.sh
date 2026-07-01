@@ -392,6 +392,69 @@ record_demo_video() {
     fi
 }
 
+audit_and_repair() {
+    echo -e "${YELLOW}🔍 DÉBUT DE L'AUDIT & AUTORÉPARATION${NC}"
+    mkdir -p ./audits
+    local REPORT_FILE="./audits/audit_report_$(date +%Y%m%d_%H%M%S).txt"
+    {
+        echo "=========================================="
+        echo " RAPPORT D'AUDIT & AUTORÉPARATION - $(date)"
+        echo "=========================================="
+        
+        echo -e "\n[ Étape 1 : VM Vagrant ]"
+        if vagrant status | grep -q "running"; then
+            echo "✅ VM Vagrant en cours d'exécution."
+        else
+            echo "❌ VM Vagrant arrêtée ou introuvable. Action corrective : vagrant up"
+            vagrant up
+        fi
+
+        echo -e "\n[ Étape 2 : Pods Kubernetes ]"
+        local PODS_FAILS=$(vagrant ssh -c "kubectl get pods -n $NAMESPACE --field-selector status.phase=Failed -o name" 2>/dev/null | tr -d '\r')
+        if [ -n "$PODS_FAILS" ]; then
+            echo "❌ Pods en échec détectés : $PODS_FAILS"
+            echo "Action corrective : Suppression des pods en échec..."
+            vagrant ssh -c "kubectl delete pods --field-selector status.phase=Failed -n $NAMESPACE"
+        else
+            echo "✅ Aucun pod en état Failed."
+        fi
+        
+        local CRASH_PODS=$(vagrant ssh -c "kubectl get pods -n $NAMESPACE | grep -E 'CrashLoopBackOff|Error|ImagePullBackOff'" 2>/dev/null | tr -d '\r')
+        if [ -n "$CRASH_PODS" ]; then
+            echo "❌ Pods défaillants détectés :"
+            echo "$CRASH_PODS"
+            echo "Action corrective : Redémarrage des déploiements associés..."
+            vagrant ssh -c "kubectl rollout restart deployment/spring-app -n $NAMESPACE"
+        else
+            echo "✅ Aucun pod en état critique."
+        fi
+
+        echo -e "\n[ Étape 3 : API Health Check ]"
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_HEALTH_URL")
+        if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ API Spring Boot répond correctement (HTTP 200)."
+        else
+            echo "❌ API Spring Boot ne répond pas ou erreur (HTTP $HTTP_CODE)."
+            echo "Action corrective : Redémarrage du service spring-app..."
+            vagrant ssh -c "kubectl rollout restart deployment/spring-app -n $NAMESPACE"
+        fi
+        
+        echo -e "\n[ Étape 4 : Logs récents (Recherche d'Exceptions) ]"
+        local LOG_ERRORS=$(vagrant ssh -c "kubectl logs deployment/spring-app -n $NAMESPACE --tail=200 | grep -i -E 'exception|error|fatal'" 2>/dev/null | tail -n 5 | tr -d '\r')
+        if [ -n "$LOG_ERRORS" ]; then
+            echo "⚠️ Avertissement : Des erreurs ont été trouvées dans les logs de l'application :"
+            echo "$LOG_ERRORS"
+        else
+            echo "✅ Aucune erreur critique récente dans les logs."
+        fi
+        
+        echo -e "\n=========================================="
+        echo " FIN DE L'AUDIT - $(date)"
+    } | tee -a "$REPORT_FILE"
+    
+    echo -e "${GREEN}✅ Audit et autoréparation terminés. Rapport : $REPORT_FILE${NC}"
+}
+
 # ==============================================================================
 # MENU PRINCIPAL
 # ==============================================================================
@@ -427,8 +490,9 @@ show_menu() {
     echo "20. Nettoyage avancé (Images, Pods Failed)"
     echo "21. Mettre à jour le fichier Hosts DNS"
     echo "22. Ouvrir un Tunnel SSH (Vagrant SSH)"
-    echo -e "${CYAN}[ DÉMONSTRATION ]${NC}"
+    echo -e "${CYAN}[ DÉMONSTRATION & AUDIT ]${NC}"
     echo "23. Enregistrer une vidéo de démo (2 min)"
+    echo "24. Audit & Autoréparation de l'environnement"
     echo -e "${RED}q. Quitter${NC}"
     echo -e "${BLUE}======================================================${NC}"
 }
@@ -466,6 +530,7 @@ while true; do
         21) update_hosts ;;
         22) ssh_tunnel ;;
         23) record_demo_video ;;
+        24) audit_and_repair ;;
         q|Q) 
             echo -e "${GREEN}Au revoir ! 👋${NC}"
             exit 0 
