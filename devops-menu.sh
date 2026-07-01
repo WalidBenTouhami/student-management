@@ -203,11 +203,26 @@ cmd_trigger_build() {
 
 cmd_health() {
     print_info "Health check API..."
-    local HTTP_CODE=$(curl -m 5 -s -o /dev/null -w "%{http_code}" "$API_HEALTH_URL" || echo "000")
+    local TARGET_IP=$VM_IP
+    if [[ "$(hostname)" == "devops-vm" ]] && command -v minikube &>/dev/null; then
+        TARGET_IP=$(minikube ip)
+    fi
+    local URL="http://${TARGET_IP}:${API_PORT}/student/actuator/health"
+    
+    local HTTP_CODE="000"
+    for i in {1..6}; do
+        HTTP_CODE=$(curl -m 5 -s -o /dev/null -w "%{http_code}" "$URL" || true)
+        if [ "$HTTP_CODE" -eq 200 ]; then
+            break
+        fi
+        print_info "Attente de l'API (Tentative $i/6)..."
+        sleep 5
+    done
+
     if [ "$HTTP_CODE" -eq 200 ]; then
         print_success "L'API est EN LIGNE (HTTP 200)."
     else
-        print_error "L'API est HORS LIGNE (HTTP $HTTP_CODE)."
+        print_error "L'API est HORS LIGNE (HTTP $HTTP_CODE) sur $URL."
         [ -n "${NON_INTERACTIVE:-}" ] && exit 1
     fi
 }
@@ -424,7 +439,9 @@ cmd_docker_push() {
 
 cmd_ci_deploy() {
     print_info "🚀 Déploiement sur Kubernetes via Helm..."
-    vm_exec "cd /vagrant && helm upgrade --install student-management ./helm/student-management --namespace devops-tools --set image.tag=${DOCKER_TAG}" 2>&1 | tee -a "$LOGS_DIR/deploy_$(date +%Y%m%d).log" || { print_error "Échec du déploiement Helm"; exit 1; }
+    vm_exec "cd /vagrant && helm upgrade --install student-management ./helm/student-management --namespace devops-tools --set image.tag=${DOCKER_TAG} --set-string mysql.password=\"\${MYSQL_PASSWORD:-root}\" --set-string mysql.rootPassword=\"\${MYSQL_ROOT_PASSWORD:-root}\" --set-string grafana.adminPassword=\"\${GRAFANA_ADMIN_PASSWORD:-admin}\" --set-string app.security.password=\"\${APP_SECURITY_PASSWORD:-admin}\"" 2>&1 | tee -a "$LOGS_DIR/deploy_$(date +%Y%m%d).log" || { print_error "Échec du déploiement Helm"; exit 1; }
+    print_info "Attente du démarrage des pods (Timeout: 3m)..."
+    vm_exec "kubectl rollout status deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE --timeout=3m" || print_warn "Timeout rollout, mais le déploiement continue."
     print_success "Déploiement réussi."
 }
 

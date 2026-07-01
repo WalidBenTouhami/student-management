@@ -17,7 +17,8 @@
 **/compose*
 **/Dockerfile*
 **/node_modules
-target
+target/*
+!target/*.jar
 .idea
 .vagrant
 exports

@@ -1,18 +1,10 @@
-FROM maven:3.9.11-eclipse-temurin-25 AS build
-WORKDIR /workspace
-COPY pom.xml mvnw ./
-COPY .mvn .mvn
-RUN ./mvnw dependency:go-offline --no-transfer-progress
-COPY src src
-RUN ./mvnw clean package -DskipTests --no-transfer-progress
-
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 LABEL org.opencontainers.image.title="Student Management"
 LABEL org.opencontainers.image.source="https://github.com/WalidBenTouhami/student-management"
 
 RUN addgroup -S spring && adduser -S spring -G spring -h /app
 WORKDIR /app
-COPY --from=build --chown=spring:spring /workspace/target/student-management-*.jar app.jar
+COPY --chown=spring:spring target/*.jar app.jar
 
 USER spring
 EXPOSE 8089
