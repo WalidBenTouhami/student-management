@@ -64,6 +64,11 @@ else
     DEMOS_DIR="./demos"
 fi
 
+DOCKER_REGISTRY="${DOCKER_REGISTRY:-docker.io}"
+DOCKER_USERNAME="${DOCKER_USERNAME:-}"
+DOCKER_PASSWORD="${DOCKER_PASSWORD:-}"
+DOCKER_TAG="${DOCKER_TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo 'latest')}"
+
 JENKINS_URL="http://${VM_IP}:${JENKINS_PORT}"
 SONAR_URL="http://${VM_IP}:${SONAR_PORT}"
 GRAFANA_URL="http://${VM_IP}:${GRAFANA_PORT}"
@@ -366,6 +371,51 @@ cmd_audit() {
     print_success "Audit terminé. Rapport: $REPORT_FILE"
 }
 
+cmd_ci_build() {
+    print_info "🚀 Exécution du build (mvn clean compile)..."
+    vm_exec "cd /vagrant && mvn clean compile" 2>&1 | tee -a "$LOGS_DIR/build_$(date +%Y%m%d).log" || { print_error "Échec du build"; exit 1; }
+    print_success "Build réussi."
+}
+
+cmd_ci_test() {
+    print_info "🚀 Exécution des tests (mvn test jacoco:report)..."
+    vm_exec "cd /vagrant && mvn test jacoco:report" 2>&1 | tee -a "$LOGS_DIR/test_$(date +%Y%m%d).log" || { print_error "Échec des tests"; exit 1; }
+    print_success "Tests réussis."
+}
+
+cmd_ci_sonar() {
+    print_info "🚀 Analyse SonarQube..."
+    vm_exec "cd /vagrant && mvn sonar:sonar -Dsonar.host.url=http://192.168.56.10:9000 -Dsonar.login=\${SONAR_TOKEN:-}" 2>&1 | tee -a "$LOGS_DIR/sonar_$(date +%Y%m%d).log" || { print_error "Échec SonarQube"; exit 1; }
+    print_success "Analyse SonarQube terminée."
+}
+
+cmd_ci_package() {
+    print_info "🚀 Packaging de l'application..."
+    vm_exec "cd /vagrant && mvn package -DskipTests" 2>&1 | tee -a "$LOGS_DIR/package_$(date +%Y%m%d).log" || { print_error "Échec du packaging"; exit 1; }
+    print_success "Package généré."
+}
+
+cmd_docker_build() {
+    print_info "🐳 Build de l'image Docker..."
+    vm_exec "cd /vagrant && eval \$(minikube docker-env) && docker build -t esprit/student-management:${DOCKER_TAG} ." 2>&1 | tee -a "$LOGS_DIR/docker-build_$(date +%Y%m%d).log" || { print_error "Échec Docker Build"; exit 1; }
+    print_success "Docker Build réussi."
+}
+
+cmd_docker_push() {
+    print_info "🐳 Push de l'image Docker..."
+    if [ -z "${DOCKER_USERNAME}" ] || [ -z "${DOCKER_PASSWORD}" ]; then
+        print_warn "Identifiants Docker non fournis. Le push risque d'échouer."
+    fi
+    vm_exec "eval \$(minikube docker-env) && docker tag esprit/student-management:${DOCKER_TAG} ${DOCKER_REGISTRY}/esprit/student-management:${DOCKER_TAG} && echo '${DOCKER_PASSWORD}' | docker login -u '${DOCKER_USERNAME}' --password-stdin && docker push ${DOCKER_REGISTRY}/esprit/student-management:${DOCKER_TAG}" 2>&1 | tee -a "$LOGS_DIR/docker-push_$(date +%Y%m%d).log" || { print_error "Échec Docker Push"; exit 1; }
+    print_success "Docker Push réussi."
+}
+
+cmd_ci_deploy() {
+    print_info "🚀 Déploiement sur Kubernetes via Helm..."
+    vm_exec "cd /vagrant && helm upgrade --install student-management ./helm/student-management --namespace devops-tools --set image.tag=${DOCKER_TAG}" 2>&1 | tee -a "$LOGS_DIR/deploy_$(date +%Y%m%d).log" || { print_error "Échec du déploiement Helm"; exit 1; }
+    print_success "Déploiement réussi."
+}
+
 cmd_generate_ci_pipeline() {
     print_info "Génération d'un pipeline CI/CD"
     echo "1. Jenkins (Declarative Pipeline)"
@@ -478,7 +528,13 @@ if [ -n "$NON_INTERACTIVE" ]; then
         health) cmd_health ;;
         backup) cmd_backup ;;
         audit) cmd_audit ;;
-        build|test|sonar|package|deploy) print_info "Exécution de l'étape CI/CD simulée : $ACTION" ;;
+        build) cmd_ci_build ;;
+        test) cmd_ci_test ;;
+        sonar) cmd_ci_sonar ;;
+        package) cmd_ci_package ;;
+        docker-build) cmd_docker_build ;;
+        docker-push) cmd_docker_push ;;
+        deploy) cmd_ci_deploy ;;
         *) print_error "Action inconnue"; exit 1 ;;
     esac
     exit 0
@@ -518,7 +574,9 @@ show_menu() {
     echo -e "${CYAN}[ DÉMO, AUDIT & CI/CD ]${NC}"
     echo "23. Enregistrer vidéo démo (2 min)"
     echo "24. Audit & Autoréparation"
-    echo "25. Générer un pipeline CI/CD"
+    echo "25. Docker Build"
+    echo "26. Docker Push"
+    echo "27. Générer un pipeline CI/CD"
     echo -e "${RED}q. Quitter${NC}"
     echo -e "${BLUE}======================================================${NC}"
 }
@@ -553,7 +611,9 @@ while true; do
         22) cmd_ssh_tunnel ;;
         23) cmd_demo_video ;;
         24) cmd_audit ;;
-        25) cmd_generate_ci_pipeline ;;
+        25) cmd_docker_build ;;
+        26) cmd_docker_push ;;
+        27) cmd_generate_ci_pipeline ;;
         q|Q) print_success "Au revoir !"; exit 0 ;;
         *) print_error "Option invalide." ;;
     esac
