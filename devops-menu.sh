@@ -327,6 +327,71 @@ advanced_cleanup() {
     fi
 }
 
+record_demo_video() {
+    echo -e "${YELLOW}🎥 Début de l'enregistrement vidéo (2 minutes)...${NC}"
+    
+    # Vérifier ffmpeg
+    if ! command -v ffmpeg &> /dev/null; then
+        echo -e "${RED}❌ ffmpeg n'est pas installé.${NC}"
+        echo -e "Veuillez l'installer via 'choco install ffmpeg' (Windows), 'brew install ffmpeg' (macOS) ou 'sudo apt install ffmpeg' (Linux)."
+        return
+    fi
+    
+    local DEMO_DIR="./demos"
+    mkdir -p "$DEMO_DIR"
+    local VIDEO_FILE="${DEMO_DIR}/demo_$(date +%Y%m%d_%H%M%S).mp4"
+    
+    echo -e "${CYAN}Démarrage de ffmpeg en arrière-plan...${NC}"
+    if [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "cygwin"* || "$OSTYPE" == "win32" ]]; then
+        ffmpeg -f gdigrab -framerate 30 -i desktop -t 120 "$VIDEO_FILE" > /dev/null 2>&1 &
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        ffmpeg -f avfoundation -framerate 30 -i "1" -t 120 "$VIDEO_FILE" > /dev/null 2>&1 &
+    else
+        ffmpeg -f x11grab -framerate 30 -i :0.0 -t 120 "$VIDEO_FILE" > /dev/null 2>&1 &
+    fi
+    
+    FFMPEG_PID=$!
+    sleep 2
+    
+    echo -e "\n${BLUE}▶️ [Étape 1] État des services...${NC}"
+    vagrant status
+    vm_exec "kubectl get pods -n $NAMESPACE"
+    vm_exec "cd /vagrant/docker && docker compose ps"
+    sleep 3
+    
+    echo -e "\n${BLUE}▶️ [Étape 2] Ouverture des dashboards...${NC}"
+    open_dashboards
+    sleep 3
+    
+    echo -e "\n${BLUE}▶️ [Étape 3] Appels API (Tests en direct)...${NC}"
+    echo -e "${CYAN}Requête GET /students :${NC}"
+    curl -s http://${VM_IP}:30089/student/students
+    echo -e "\n${CYAN}Requête GET /departments :${NC}"
+    curl -s http://${VM_IP}:30089/student/departments
+    sleep 3
+    
+    echo -e "\n${BLUE}▶️ [Étape 4] Logs récents...${NC}"
+    vm_exec "kubectl logs deployment/spring-app -n $NAMESPACE --tail=10"
+    sleep 3
+    
+    echo -e "\n${BLUE}▶️ [Étape 5] Récapitulatif...${NC}"
+    echo -e "${GREEN}✅ Récapitulatif :${NC}"
+    echo -e "   URLs : http://${VM_IP}:30089/student"
+    local TAG=$(vagrant ssh -c "kubectl get deployment spring-app -n $NAMESPACE -o jsonpath='{.spec.template.spec.containers[0].image}'" 2>/dev/null | tr -d '\r')
+    echo -e "   Image tag : $TAG"
+    sleep 3
+    
+    echo -e "${YELLOW}⏳ Fin de l'enregistrement. Attente de la sauvegarde...${NC}"
+    wait $FFMPEG_PID
+    echo -e "${GREEN}✅ Vidéo enregistrée avec succès dans : $VIDEO_FILE${NC}"
+    
+    echo -e "${CYAN}Voulez-vous l'ouvrir maintenant ?${NC}"
+    read -p "(y/n) : " choice
+    if [[ "$choice" =~ ^[Yy]$ ]]; then
+        open_url "$VIDEO_FILE"
+    fi
+}
+
 # ==============================================================================
 # MENU PRINCIPAL
 # ==============================================================================
@@ -362,6 +427,8 @@ show_menu() {
     echo "20. Nettoyage avancé (Images, Pods Failed)"
     echo "21. Mettre à jour le fichier Hosts DNS"
     echo "22. Ouvrir un Tunnel SSH (Vagrant SSH)"
+    echo -e "${CYAN}[ DÉMONSTRATION ]${NC}"
+    echo "23. Enregistrer une vidéo de démo (2 min)"
     echo -e "${RED}q. Quitter${NC}"
     echo -e "${BLUE}======================================================${NC}"
 }
@@ -398,6 +465,7 @@ while true; do
         20) advanced_cleanup ;;
         21) update_hosts ;;
         22) ssh_tunnel ;;
+        23) record_demo_video ;;
         q|Q) 
             echo -e "${GREEN}Au revoir ! 👋${NC}"
             exit 0 
