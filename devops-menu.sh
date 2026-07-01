@@ -126,7 +126,7 @@ open_terminal() {
 
 vm_exec() {
     if [[ "$(hostname)" == "devops-vm" ]]; then
-        bash -c "$1"
+        bash -l -c "$1"
     else
         vagrant ssh -c "$1" 2>/dev/null
     fi
@@ -409,7 +409,7 @@ cmd_ci_package() {
 
 cmd_docker_build() {
     print_info "🐳 Build de l'image Docker..."
-    vm_exec "cd /vagrant && eval \$(minikube -p minikube docker-env 2>/dev/null || minikube docker-env) && docker build -t esprit/student-management:${DOCKER_TAG} ." 2>&1 | tee -a "$LOGS_DIR/docker-build_$(date +%Y%m%d).log" || { print_error "Échec Docker Build"; exit 1; }
+    vm_exec "cd /vagrant && if command -v minikube &>/dev/null; then eval \$(minikube -p minikube docker-env 2>/dev/null || minikube docker-env); fi && docker build -t esprit/student-management:${DOCKER_TAG} ." 2>&1 | tee -a "$LOGS_DIR/docker-build_$(date +%Y%m%d).log" || { print_error "Échec Docker Build"; exit 1; }
     print_success "Docker Build réussi."
 }
 
