@@ -2,11 +2,11 @@ FROM eclipse-temurin:21-jre-alpine
 LABEL org.opencontainers.image.title="Student Management"
 LABEL org.opencontainers.image.source="https://github.com/WalidBenTouhami/student-management"
 
-RUN addgroup -S spring && adduser -S spring -G spring -h /app
+RUN addgroup -g 1001 spring && adduser -u 1001 -S spring -G spring -h /app
 WORKDIR /app
-COPY --chown=spring:spring target/*.jar app.jar
+COPY --chown=1001:1001 target/*.jar app.jar
 
-USER spring
+USER 1001
 EXPOSE 8089
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseContainerSupport"
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
