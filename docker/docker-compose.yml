@@ -7,7 +7,7 @@ services:
   # 🐬 MYSQL - Base de Données
   # ============================================================
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0.42
     container_name: student-mysql
     restart: unless-stopped
     environment:
@@ -22,6 +22,11 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - devops-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -57,8 +62,13 @@ services:
         condition: service_healthy
     networks:
       - devops-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 1G
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8089/student/actuator/health"]
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8089/student/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -85,7 +95,13 @@ services:
     networks:
       - devops-network
     depends_on:
-      - sonarqube-db
+      sonarqube-db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
 
   # ============================================================
   # 🐘 SONARQUBE DATABASE
@@ -102,6 +118,16 @@ services:
       - sonar_db:/var/lib/postgresql/data
     networks:
       - devops-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
   # ============================================================
   # 📉 PROMETHEUS - Supervision
@@ -121,9 +147,17 @@ services:
     networks:
       - devops-network
     depends_on:
-      - spring-app
-      - mysqld-exporter
-      - node-exporter
+      spring-app:
+        condition: service_healthy
+      mysqld-exporter:
+        condition: service_started
+      node-exporter:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
   mysqld-exporter:
     image: prom/mysqld-exporter:v0.14.0
@@ -135,6 +169,11 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
 
   node-exporter:
     image: prom/node-exporter:v1.9.1
@@ -142,6 +181,11 @@ services:
     restart: unless-stopped
     networks:
       - devops-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
 
   # ============================================================
   # 📈 GRAFANA - Visualisation
@@ -164,6 +208,11 @@ services:
       - devops-network
     depends_on:
       - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
 # ============================================================
 # 🔗 VOLUMES PERSISTANTS

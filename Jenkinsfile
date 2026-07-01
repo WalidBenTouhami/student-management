@@ -42,8 +42,9 @@ pipeline {
         // 2. BUILD MAVEN
         // ============================================================
         stage('Build') {
+            options { timeout(time: 10, unit: 'MINUTES') }
             steps {
-                sh 'chmod +x mvnw && ./mvnw clean compile'
+                sh 'chmod +x mvnw && ./mvnw clean compile --no-transfer-progress'
             }
         }
 
@@ -51,10 +52,11 @@ pipeline {
         // 3. TESTS UNITAIRE
         // ============================================================
         stage('Test & Coverage') {
+            options { timeout(time: 15, unit: 'MINUTES') }
             steps {
                 sh '''
                     chmod +x mvnw
-                    ./mvnw clean test jacoco:report --no-transfer-progress
+                    ./mvnw test jacoco:report --no-transfer-progress
                 '''
             }
             post {
@@ -136,8 +138,9 @@ pipeline {
         // 6. PACKAGE (JAR)
         // ============================================================
         stage('Package') {
+            options { timeout(time: 10, unit: 'MINUTES') }
             steps {
-                sh 'chmod +x mvnw && ./mvnw package -DskipTests'
+                sh 'chmod +x mvnw && ./mvnw package -DskipTests --no-transfer-progress'
             }
             post {
                 success {
@@ -150,6 +153,7 @@ pipeline {
         // 7. BUILD DOCKER IMAGE (DIRECTLY IN MINIKUBE)
         // ============================================================
         stage('Docker Build') {
+            options { timeout(time: 15, unit: 'MINUTES') }
             steps {
                 script {
                     sh '''
