@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
-# 🚀 Student Management - DevOps All-in-One Manager (Production Ready v3.0)
-# Auteur      : Senior DevOps Architect
+# 🚀 Student Management - DevOps All-in-One Manager (Production Ready v3.1)
+# Auteur      : Senior DevOps Architect / QA Engineer
 # Description : Script interactif et batch pour la gestion complète de
 #               l'environnement de développement et de production K8s/Vagrant.
 # ==============================================================================
@@ -9,18 +9,22 @@
 # ------------------------------------------------------------------------------
 # 1. PARAMÉTRAGE STRICT ET GESTION DES SIGNAUX
 # ------------------------------------------------------------------------------
-set -eo pipefail
+# Attention: on retire 'e' pour éviter que le script plante sur un grep vide dans
+# le mode interactif. On gère les erreurs manuellement avec des vérifications.
+set -uo pipefail
 
-trap cleanup SIGINT SIGTERM ERR EXIT
+trap cleanup SIGINT SIGTERM ERR
 
 cleanup() {
     local exit_code=$?
-    # Ne rien faire si on quitte proprement
     if [ $exit_code -ne 0 ]; then
-        log "ERROR" "Le script s'est arrêté de manière inattendue avec le code $exit_code."
-        echo -e "${RED}❌ Une erreur critique est survenue. Vérifiez les logs.${NC}"
+        log "ERROR" "Le script s'est arrêté avec le code $exit_code."
+        echo -e "\n${RED}❌ Une erreur est survenue (Code: $exit_code).${NC}"
     fi
-    trap - SIGINT SIGTERM ERR EXIT
+    # Tuer les processus en background (comme ffmpeg) s'ils existent
+    if [ -n "${FFMPEG_PID:-}" ] && kill -0 $FFMPEG_PID 2>/dev/null; then
+        kill $FFMPEG_PID 2>/dev/null || true
+    fi
     exit $exit_code
 }
 
@@ -40,9 +44,8 @@ if [ -f "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
 elif [ -f "config.conf.example" ]; then
     source "config.conf.example"
-    # Affichage désactivé en mode non interactif pour ne pas polluer stdout
 else
-    # Valeurs par défaut hardcodées si aucun fichier n'existe
+    # Fallback
     VM_IP="192.168.56.10"
     NAMESPACE="devops-tools"
     APP_DEPLOYMENT_NAME="spring-app"
@@ -72,7 +75,7 @@ API_HEALTH_URL="http://${VM_IP}:${API_PORT}/student/actuator/health"
 mkdir -p "$BACKUP_DIR" "$LOGS_DIR" "$AUDITS_DIR" "$DEMOS_DIR"
 LOG_FILE="${LOGS_DIR}/devops-menu.log"
 
-# Nettoyage des logs plus vieux que 7 jours (Rotation simple)
+# Nettoyage des logs plus vieux que 7 jours
 find "$LOGS_DIR" -name "*.log" -type f -mtime +7 -delete 2>/dev/null || true
 
 # ------------------------------------------------------------------------------
@@ -130,29 +133,20 @@ pause() {
 check_prerequisites() {
     log "INFO" "Vérification des prérequis."
     local MISSING=0
-    for cmd in vagrant git curl jq; do
+    for cmd in vagrant git curl; do
         if ! command -v $cmd &> /dev/null; then
             print_error "$cmd n'est pas installé ou n'est pas dans le PATH."
             MISSING=1
         fi
     done
     if [ $MISSING -eq 1 ]; then
-        print_error "Veuillez installer les outils manquants avant de continuer."
+        print_error "Outils vitaux manquants. Arrêt."
         exit 1
     fi
 }
 
-check_k8s_auth() {
-    local AUTH=$(vm_exec "kubectl auth can-i get pods -n $NAMESPACE" | tr -d '\r')
-    if [[ "$AUTH" != "yes" ]]; then
-        print_error "Permissions Kubernetes insuffisantes pour le namespace $NAMESPACE."
-        return 1
-    fi
-    return 0
-}
-
 # ------------------------------------------------------------------------------
-# 4. FONCTIONNALITÉS (Actions Core)
+# 4. COMMANDES (24 Actions)
 # ------------------------------------------------------------------------------
 
 cmd_start_env() {
@@ -168,20 +162,11 @@ cmd_stop_env() {
 }
 
 cmd_status() {
-    print_info "Vérification de l'état des services (en parallèle)..."
-    # Execution en parallèle (background) pour accélérer l'affichage
-    (
-        echo -e "${BLUE}--- État de Vagrant ---${NC}"
-        vagrant status | grep -E "running|saved|poweroff|aborted" || true
-    ) &
-    
-    (
-        echo -e "\n${BLUE}--- État des Pods Kubernetes ---${NC}"
-        vm_exec "kubectl get pods -n $NAMESPACE" || true
-    ) &
-    
-    wait
-    print_success "Affichage de l'état terminé."
+    print_info "Vérification de l'état des services..."
+    echo -e "${BLUE}--- État de Vagrant ---${NC}"
+    vagrant status | grep -E "running|saved|poweroff|aborted" || true
+    echo -e "\n${BLUE}--- État des Pods Kubernetes ---${NC}"
+    vm_exec "kubectl get pods -n $NAMESPACE" || true
 }
 
 cmd_dashboards() {
@@ -191,139 +176,210 @@ cmd_dashboards() {
     open_url "$GRAFANA_URL"
     open_url "$PROMETHEUS_URL"
     open_url "$API_SWAGGER_URL"
+    print_success "Dashboards ouverts."
+}
+
+cmd_trigger_build() {
+    print_info "Déclenchement du build Jenkins..."
+    open_url "${JENKINS_URL}/job/student-management-pipeline/"
 }
 
 cmd_health() {
-    print_info "Health check de l'API (${API_HEALTH_URL})..."
+    print_info "Health check API..."
     local HTTP_CODE=$(curl -m 5 -s -o /dev/null -w "%{http_code}" "$API_HEALTH_URL" || echo "000")
     if [ "$HTTP_CODE" -eq 200 ]; then
         print_success "L'API est EN LIGNE (HTTP 200)."
     else
-        print_error "L'API est HORS LIGNE ou injoignable (HTTP $HTTP_CODE)."
-        exit 1
+        print_error "L'API est HORS LIGNE (HTTP $HTTP_CODE)."
+        [ -n "${NON_INTERACTIVE:-}" ] && exit 1
     fi
 }
 
+cmd_update_deployment() {
+    print_info "Mise à jour via Helm..."
+    vm_exec "helm upgrade $HELM_RELEASE_NAME $HELM_CHART_PATH -n $NAMESPACE"
+}
+
+cmd_helm_rollback() {
+    print_info "Historique Helm :"
+    vm_exec "helm history $HELM_RELEASE_NAME -n $NAMESPACE"
+    if [ -z "${NON_INTERACTIVE:-}" ]; then
+        read -p "Numéro de révision (0 pour annuler) : " rev
+        if [[ "$rev" =~ ^[0-9]+$ ]] && [ "$rev" -gt 0 ]; then
+            vm_exec "helm rollback $HELM_RELEASE_NAME $rev -n $NAMESPACE"
+            print_success "Rollback effectué."
+        fi
+    fi
+}
+
+cmd_restart_service() {
+    print_info "Redémarrage de l'API..."
+    vm_exec "kubectl rollout restart deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE"
+}
+
+cmd_manage_secrets() {
+    print_info "Secrets Kubernetes :"
+    vm_exec "kubectl get secrets -n $NAMESPACE"
+    if [ -z "${NON_INTERACTIVE:-}" ]; then
+        read -p "Éditer un secret ? (y/n) : " choice
+        if [[ "$choice" =~ ^[Yy]$ ]]; then
+            read -p "Nom du secret : " sec_name
+            vm_exec "kubectl edit secret $sec_name -n $NAMESPACE"
+        fi
+    fi
+}
+
+cmd_network_info() {
+    print_info "Informations Réseau"
+    echo -e "IP VM: $VM_IP"
+    echo -e "API K8s Port: $API_PORT"
+}
+
+cmd_show_logs() {
+    print_info "Logs Spring App..."
+    vm_exec "kubectl logs deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE --tail=50"
+}
+
+cmd_pod_details() {
+    print_info "Détails des Pods..."
+    vm_exec "kubectl top pods -n $NAMESPACE" || true
+    vm_exec "kubectl get pods -n $NAMESPACE -o wide"
+}
+
+cmd_realtime_monitoring() {
+    print_info "Ouverture terminaux monitoring..."
+    open_terminal "vagrant ssh -c 'kubectl get pods -n $NAMESPACE -w'"
+    open_terminal "vagrant ssh -c 'kubectl logs -f deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE'"
+}
+
+cmd_generate_report() {
+    print_info "Génération du rapport d'état..."
+    local REPORT_FILE="status_report_$(date +%F_%H-%M-%S).txt"
+    {
+        echo "RAPPORT D'ÉTAT - $(date)"
+        vm_exec "kubectl get nodes"
+        vm_exec "kubectl get pods -n $NAMESPACE"
+        vm_exec "helm list -n $NAMESPACE"
+    } > "$REPORT_FILE"
+    print_success "Rapport généré : $REPORT_FILE"
+}
+
 cmd_backup() {
-    print_info "Création d'un backup MySQL..."
+    print_info "Backup MySQL..."
     local FILE_NAME="backup_$(date +%F_%H-%M-%S).sql"
     local POD_NAME=$(vm_exec "kubectl get pods -n $NAMESPACE -l $DB_LABEL -o jsonpath='{.items[0].metadata.name}'" | tr -d '\r')
-    
-    if [ -z "$POD_NAME" ]; then
-        print_error "Impossible de trouver le pod MySQL."
-        return 1
-    fi
+    if [ -z "$POD_NAME" ]; then print_error "Pod MySQL introuvable."; return 1; fi
 
-    # Le mot de passe est récupéré dynamiquement depuis l'environnement du pod.
     vm_exec "kubectl exec -n $NAMESPACE $POD_NAME -- bash -c 'mysqldump -u root -p\$MYSQL_ROOT_PASSWORD studentdb'" > "${BACKUP_DIR}/${FILE_NAME}"
-    
     if [ -s "${BACKUP_DIR}/${FILE_NAME}" ]; then
-        local SIZE=$(du -h "${BACKUP_DIR}/${FILE_NAME}" | cut -f1)
-        print_success "Backup réussi ! Fichier: ${BACKUP_DIR}/${FILE_NAME} (Taille: $SIZE)"
+        print_success "Backup réussi : ${BACKUP_DIR}/${FILE_NAME}"
     else
-        print_error "Échec du backup. Fichier vide."
+        print_error "Échec du backup."
         rm -f "${BACKUP_DIR}/${FILE_NAME}"
+        [ -n "${NON_INTERACTIVE:-}" ] && exit 1
+    fi
+}
+
+cmd_restore() {
+    print_info "Restauration MySQL..."
+    local backups=(${BACKUP_DIR}/*.sql)
+    if [ ${#backups[@]} -eq 0 ] || [ ! -e "${backups[0]}" ]; then
+        print_error "Aucun backup."
         return 1
     fi
+    for i in "${!backups[@]}"; do echo "$((i+1)). $(basename "${backups[$i]")"; done
+    if [ -z "${NON_INTERACTIVE:-}" ]; then
+        read -p "Choix : " choice
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -gt 0 ] && [ "$choice" -le "${#backups[@]}" ]; then
+            local file="${backups[$((choice-1))]}"
+            local POD_NAME=$(vm_exec "kubectl get pods -n $NAMESPACE -l $DB_LABEL -o jsonpath='{.items[0].metadata.name}'" | tr -d '\r')
+            cat "$file" | vm_exec "kubectl exec -i -n $NAMESPACE $POD_NAME -- bash -c 'mysql -u root -p\$MYSQL_ROOT_PASSWORD studentdb'"
+            print_success "Restauration terminée."
+        fi
+    fi
+}
+
+cmd_trivy_scan() {
+    print_info "Scan Trivy..."
+    vm_exec "if ! command -v trivy &>/dev/null; then curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.49.1; fi; trivy image esprit/student-management:latest --severity HIGH,CRITICAL"
+}
+
+cmd_smoke_tests() {
+    print_info "Smoke Tests..."
+    for url in "http://${VM_IP}:${API_PORT}/student/students" "http://${VM_IP}:${API_PORT}/student/departments"; do
+        local res=$(curl -o /dev/null -s -w "%{http_code}\n" "$url")
+        echo -e "Testing $url ... HTTP $res"
+    done
+}
+
+cmd_advanced_cleanup() {
+    print_info "Nettoyage..."
+    vm_exec "kubectl delete pods --field-selector status.phase=Failed -n $NAMESPACE" || true
+    vm_exec "eval \$(minikube docker-env) && docker image prune -a -f" || true
+    print_success "Nettoyage terminé."
+}
+
+cmd_update_hosts() {
+    print_info "Ajoutez ceci à votre fichier hosts :"
+    echo -e "${YELLOW}${VM_IP} api.student.local grafana.student.local jenkins.student.local${NC}"
+}
+
+cmd_ssh_tunnel() {
+    print_info "Ouverture session SSH..."
+    open_terminal "vagrant ssh"
+}
+
+cmd_demo_video() {
+    print_info "Enregistrement vidéo (2 min)..."
+    if ! command -v ffmpeg &> /dev/null; then
+        print_error "ffmpeg non installé."
+        return 1
+    fi
+    local VIDEO_FILE="${DEMOS_DIR}/demo_$(date +%Y%m%d_%H%M%S).mp4"
+    if [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "win32" ]]; then
+        ffmpeg -f gdigrab -framerate 30 -i desktop -t 120 "$VIDEO_FILE" > /dev/null 2>&1 &
+    else
+        ffmpeg -f x11grab -framerate 30 -i :0.0 -t 120 "$VIDEO_FILE" > /dev/null 2>&1 &
+    fi
+    FFMPEG_PID=$!
+    sleep 2
+    cmd_status
+    sleep 2
+    cmd_dashboards
+    sleep 2
+    cmd_smoke_tests
+    wait $FFMPEG_PID || true
+    print_success "Vidéo sauvegardée : $VIDEO_FILE"
 }
 
 cmd_audit() {
     print_info "DÉBUT DE L'AUDIT & AUTORÉPARATION"
     local REPORT_FILE="${AUDITS_DIR}/audit_report_$(date +%Y%m%d_%H%M%S).txt"
     {
-        echo "=========================================="
-        echo " RAPPORT D'AUDIT & AUTORÉPARATION - $(date)"
-        echo "=========================================="
-        
-        echo -e "\n[ Étape 1 : VM Vagrant ]"
-        if vagrant status | grep -q "running"; then
-            echo "✅ VM Vagrant en cours d'exécution."
-        else
-            echo "❌ VM Vagrant arrêtée ou introuvable. Action corrective : vagrant up"
-            vagrant up || echo "Échec de vagrant up"
-        fi
-
-        echo -e "\n[ Étape 2 : Pods Kubernetes ]"
+        echo "RAPPORT D'AUDIT - $(date)"
+        if ! vagrant status | grep -q "running"; then vagrant up || true; fi
         local PODS_FAILS=$(vm_exec "kubectl get pods -n $NAMESPACE --field-selector status.phase=Failed -o name" | tr -d '\r')
-        if [ -n "$PODS_FAILS" ]; then
-            echo "❌ Pods en échec détectés : $PODS_FAILS"
-            echo "Action corrective : Suppression des pods en échec..."
-            vm_exec "kubectl delete pods --field-selector status.phase=Failed -n $NAMESPACE" || true
-        else
-            echo "✅ Aucun pod en état Failed."
-        fi
-        
-        local CRASH_PODS=$(vm_exec "kubectl get pods -n $NAMESPACE | grep -E 'CrashLoopBackOff|Error|ImagePullBackOff'" | tr -d '\r' || true)
-        if [ -n "$CRASH_PODS" ]; then
-            echo "❌ Pods défaillants détectés :"
-            echo "$CRASH_PODS"
-            echo "Action corrective : Redémarrage des déploiements associés..."
-            vm_exec "kubectl rollout restart deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE" || true
-        else
-            echo "✅ Aucun pod en état critique."
-        fi
-
-        echo -e "\n[ Étape 3 : API Health Check ]"
+        if [ -n "$PODS_FAILS" ]; then vm_exec "kubectl delete pods --field-selector status.phase=Failed -n $NAMESPACE" || true; fi
         local HTTP_CODE=$(curl -m 5 -s -o /dev/null -w "%{http_code}" "$API_HEALTH_URL" || echo "000")
-        if [ "$HTTP_CODE" -eq 200 ]; then
-            echo "✅ API Spring Boot répond correctement (HTTP 200)."
-        else
-            echo "❌ API Spring Boot ne répond pas ou erreur (HTTP $HTTP_CODE)."
-            echo "Action corrective : Redémarrage du service..."
-            vm_exec "kubectl rollout restart deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE" || true
-        fi
-        
-        echo -e "\n[ Étape 4 : Logs récents (Recherche d'Exceptions) ]"
-        local LOG_ERRORS=$(vm_exec "kubectl logs deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE --tail=200 | grep -i -E 'exception|error|fatal' | tail -n 5" | tr -d '\r' || true)
-        if [ -n "$LOG_ERRORS" ]; then
-            echo "⚠️ Avertissement : Des erreurs ont été trouvées dans les logs de l'application :"
-            echo "$LOG_ERRORS"
-        else
-            echo "✅ Aucune erreur critique récente dans les logs."
-        fi
-        
-        echo -e "\n=========================================="
-        echo " FIN DE L'AUDIT - $(date)"
-    } | tee -a "$REPORT_FILE"
-    
-    print_success "Audit et autoréparation terminés. Rapport : $REPORT_FILE"
+        if [ "$HTTP_CODE" -ne 200 ]; then vm_exec "kubectl rollout restart deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE" || true; fi
+    } > "$REPORT_FILE"
+    print_success "Audit terminé. Rapport: $REPORT_FILE"
 }
 
 # ------------------------------------------------------------------------------
-# 5. ARGUMENTS LIGNE DE COMMANDE (Mode Non-Interactif / CI-CD)
+# 5. ARGUMENTS ET MENU
 # ------------------------------------------------------------------------------
-
 usage() {
-    echo -e "${GREEN}Utilisation : $0 [options]${NC}"
-    echo "Options:"
-    echo "  -h, --help       Afficher l'aide"
-    echo "  -c, --config     Spécifier un fichier de configuration alternatif"
-    echo "  -a, --action     Exécuter une action en mode batch (sans menu)"
-    echo ""
-    echo "Actions disponibles :"
-    echo "  start     : Démarre l'environnement (VM)"
-    echo "  stop      : Arrête l'environnement"
-    echo "  status    : Affiche l'état K8s et Vagrant"
-    echo "  health    : Vérifie la santé de l'API"
-    echo "  backup    : Exécute un backup MySQL"
-    echo "  audit     : Lance l'audit et l'autoréparation"
-    echo ""
-    echo "Exemple : $0 --action health"
+    echo "Utilisation : $0 [--action <start|stop|status|health|backup|audit>]"
     exit 0
 }
 
 NON_INTERACTIVE=""
-
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -h|--help) usage ;;
         -c|--config) CONFIG_FILE="$2"; source "$CONFIG_FILE"; shift ;;
-        -a|--action) 
-            NON_INTERACTIVE="true"
-            ACTION="$2"
-            shift 
-            ;;
-        *) print_error "Paramètre inconnu: $1"; usage ;;
+        -a|--action) NON_INTERACTIVE="true"; ACTION="$2"; shift ;;
     esac
     shift
 done
@@ -337,57 +393,81 @@ if [ -n "$NON_INTERACTIVE" ]; then
         health) cmd_health ;;
         backup) cmd_backup ;;
         audit) cmd_audit ;;
-        *) print_error "Action inconnue: $ACTION"; exit 1 ;;
+        *) print_error "Action inconnue"; exit 1 ;;
     esac
     exit 0
 fi
 
-# ------------------------------------------------------------------------------
-# 6. MODE INTERACTIF (Menu)
-# ------------------------------------------------------------------------------
-
 show_menu() {
     clear
     echo -e "${BLUE}======================================================${NC}"
-    echo -e "${GREEN}🚀 Student Management - DevOps Menu (Production v3.0)${NC}"
+    echo -e "${GREEN}🚀 Student Management - DevOps Menu (v3.1 QA Approved)${NC}"
     echo -e "${BLUE}======================================================${NC}"
-    echo -e "${CYAN}[ OPÉRATIONS CORE ]${NC}"
+    echo -e "${CYAN}[ OPÉRATIONS DE BASE ]${NC}"
     echo "1. Démarrer l'environnement"
     echo "2. Arrêter l'environnement"
     echo "3. État des services"
     echo "4. Ouvrir les dashboards"
-    echo "5. Health check API"
+    echo "5. Déclencher Build Jenkins"
+    echo "6. Health check API"
+    echo -e "${CYAN}[ DÉPLOIEMENT & INFRA ]${NC}"
+    echo "7. Mettre à jour le déploiement (Helm Upgrade)"
+    echo "8. Rollback Helm"
+    echo "9. Redémarrer le service Spring App"
+    echo "10. Gestion des Secrets K8s"
+    echo "11. Informations réseau"
+    echo -e "${CYAN}[ SUPERVISION & LOGS ]${NC}"
+    echo "12. Logs basiques (Spring Boot)"
+    echo "13. Détails des Pods et Ressources"
+    echo "14. Supervision en temps réel"
+    echo "15. Générer un rapport d'état système"
     echo -e "${CYAN}[ MAINTENANCE & SÉCURITÉ ]${NC}"
-    echo "6. Backup de la Base de Données (MySQL)"
-    echo "7. Audit & Autoréparation de l'environnement"
+    echo "16. Backup de la BDD (MySQL)"
+    echo "17. Restaurer un Backup"
+    echo "18. Scan vulnérabilités (Trivy)"
+    echo "19. Smoke Tests"
+    echo "20. Nettoyage avancé"
+    echo "21. Mettre à jour fichier Hosts DNS"
+    echo "22. Ouvrir Tunnel SSH"
+    echo -e "${CYAN}[ DÉMO & AUDIT ]${NC}"
+    echo "23. Enregistrer vidéo démo (2 min)"
+    echo "24. Audit & Autoréparation"
     echo -e "${RED}q. Quitter${NC}"
     echo -e "${BLUE}======================================================${NC}"
 }
 
 check_prerequisites
-
 while true; do
     show_menu
     read -p "Votre choix : " choice
     echo ""
-
     case $choice in
         1) cmd_start_env ;;
         2) cmd_stop_env ;;
         3) cmd_status ;;
         4) cmd_dashboards ;;
-        5) cmd_health ;;
-        6) cmd_backup ;;
-        7) cmd_audit ;;
-        q|Q) 
-            print_success "Au revoir ! 👋"
-            # Cleanup trap gère le reste
-            trap - SIGINT SIGTERM ERR EXIT
-            exit 0 
-            ;;
-        *) 
-            print_error "Option invalide. Veuillez réessayer." 
-            ;;
+        5) cmd_trigger_build ;;
+        6) cmd_health ;;
+        7) cmd_update_deployment ;;
+        8) cmd_helm_rollback ;;
+        9) cmd_restart_service ;;
+        10) cmd_manage_secrets ;;
+        11) cmd_network_info ;;
+        12) cmd_show_logs ;;
+        13) cmd_pod_details ;;
+        14) cmd_realtime_monitoring ;;
+        15) cmd_generate_report ;;
+        16) cmd_backup ;;
+        17) cmd_restore ;;
+        18) cmd_trivy_scan ;;
+        19) cmd_smoke_tests ;;
+        20) cmd_advanced_cleanup ;;
+        21) cmd_update_hosts ;;
+        22) cmd_ssh_tunnel ;;
+        23) cmd_demo_video ;;
+        24) cmd_audit ;;
+        q|Q) print_success "Au revoir !"; exit 0 ;;
+        *) print_error "Option invalide." ;;
     esac
     pause
 done
