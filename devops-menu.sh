@@ -115,7 +115,7 @@ open_url() {
 open_terminal() {
     local CMD=$1
     if [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "cygwin"* || "$OSTYPE" == "win32" ]]; then
-        start bash -c "$CMD; echo ''; read -p 'Appuyez sur Entrée pour fermer...'"
+        start powershell -NoProfile -NoExit -Command "$CMD"
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         osascript -e "tell application \"Terminal\" to do script \"$CMD\""
     else
@@ -306,8 +306,8 @@ cmd_pod_details() {
 
 cmd_realtime_monitoring() {
     print_info "Ouverture terminaux monitoring..."
-    open_terminal "vagrant ssh -c 'kubectl get pods -n $NAMESPACE -w'"
-    open_terminal "vagrant ssh -c 'kubectl logs -f deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE'"
+    open_terminal "vagrant ssh -c \"kubectl get pods -n $NAMESPACE -w\""
+    open_terminal "vagrant ssh -c \"kubectl logs -f deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE\""
 }
 
 cmd_generate_report() {
