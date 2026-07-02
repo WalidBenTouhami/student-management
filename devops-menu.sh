@@ -400,25 +400,25 @@ cmd_audit() {
 
 cmd_ci_build() {
     print_info "🚀 Exécution du build (mvn clean compile)..."
-    vm_exec "cd /vagrant && chmod +x mvnw && ./mvnw clean compile" 2>&1 | tee -a "$LOGS_DIR/build_$(date +%Y%m%d).log" || { print_error "Échec du build"; exit 1; }
+    vm_exec "cd /vagrant && bash ./mvnw clean compile" 2>&1 | tee -a "$LOGS_DIR/build_$(date +%Y%m%d).log" || { print_error "Échec du build"; exit 1; }
     print_success "Build réussi."
 }
 
 cmd_ci_test() {
     print_info "🚀 Exécution des tests (mvn test jacoco:report)..."
-    vm_exec "cd /vagrant && chmod +x mvnw && ./mvnw test jacoco:report" 2>&1 | tee -a "$LOGS_DIR/test_$(date +%Y%m%d).log" || { print_error "Échec des tests"; exit 1; }
+    vm_exec "cd /vagrant && bash ./mvnw test jacoco:report" 2>&1 | tee -a "$LOGS_DIR/test_$(date +%Y%m%d).log" || { print_error "Échec des tests"; exit 1; }
     print_success "Tests réussis."
 }
 
 cmd_ci_sonar() {
     print_info "🚀 Analyse SonarQube..."
-    vm_exec "cd /vagrant && chmod +x mvnw && ./mvnw sonar:sonar -Dsonar.host.url=http://192.168.56.10:9000 -Dsonar.login=\${SONAR_TOKEN:-}" 2>&1 | tee -a "$LOGS_DIR/sonar_$(date +%Y%m%d).log" || { print_error "Échec SonarQube"; exit 1; }
+    vm_exec "cd /vagrant && bash ./mvnw sonar:sonar -Dsonar.host.url=http://192.168.56.10:9000 -Dsonar.login=\${SONAR_TOKEN:-}" 2>&1 | tee -a "$LOGS_DIR/sonar_$(date +%Y%m%d).log" || { print_error "Échec SonarQube"; exit 1; }
     print_success "Analyse SonarQube terminée."
 }
 
 cmd_ci_package() {
     print_info "🚀 Packaging de l'application..."
-    vm_exec "cd /vagrant && chmod +x mvnw && ./mvnw package -DskipTests" 2>&1 | tee -a "$LOGS_DIR/package_$(date +%Y%m%d).log" || { print_error "Échec du packaging"; exit 1; }
+    vm_exec "cd /vagrant && bash ./mvnw package -DskipTests" 2>&1 | tee -a "$LOGS_DIR/package_$(date +%Y%m%d).log" || { print_error "Échec du packaging"; exit 1; }
     print_success "Package généré."
 }
 
