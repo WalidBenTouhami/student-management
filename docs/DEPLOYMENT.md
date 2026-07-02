@@ -58,12 +58,15 @@ Le comportement de l'application est dirigé par des variables d'environnement i
 
 | Variable | Description |
 |---|---|
-| `SPRING_PROFILES_ACTIVE` | Définit le profil Spring (ex: `prod`). |
+| `SPRING_PROFILES_ACTIVE` | Définit le profil Spring (forcé à `prod` dans Kubernetes pour utiliser MySQL). |
 | `SPRING_DATASOURCE_URL` | L'URL JDBC complète vers la base MySQL. |
 | `SPRING_DATASOURCE_USERNAME` | Utilisateur de la base de données. |
 | `SPRING_DATASOURCE_PASSWORD` | Mot de passe de la base de données (Secret K8s). |
-| `APP_SECURITY_USERNAME` | Identifiant pour l'accès aux endpoints Actuator/Prometheus. |
-| `APP_SECURITY_PASSWORD` | Mot de passe pour l'accès aux métriques. |
+| `APP_SECURITY_USERNAME` | Identifiant pour l'accès sécurisé à l'API (Endpoints métiers et Actuator). |
+| `APP_SECURITY_PASSWORD` | Mot de passe injecté dynamiquement depuis les Secrets Kubernetes (`app-secrets`). |
+
+> [!TIP]
+> Toutes les variables sensibles (mots de passe) sont stockées dans le cluster sous forme de **Kubernetes Secrets** et sont injectées dynamiquement par Helm lors de la commande `helm upgrade`. Le port par défaut d'accès au service est le NodePort **30089**.
 
 ---
 

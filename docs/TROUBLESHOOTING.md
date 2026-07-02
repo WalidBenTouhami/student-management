@@ -4,7 +4,14 @@ Ce document répertorie les problèmes courants rencontrés lors de l'installati
 
 ---
 
-## 1. Problème : La VM Vagrant ne démarre pas ou fige
+## 1. 🔍 La règle d'Or : Consulter les Logs d'Audit
+**Symptômes** : Une option du menu `devops-menu.sh` a échoué silencieusement ou affiche une erreur générique avec un statut non-nul.
+**Solutions** :
+* Grâce à la fonction de sécurité `run_with_audit`, **toute exécution de commande est sauvegardée**.
+* Si une erreur survient, le script affichera le chemin du fichier (ex: `audits/debug_cmd_ci_deploy_20260702_120000.log`).
+* Ouvrez ce fichier pour lire la cause exacte de l'échec (souvent liée à un problème réseau, un timeout Docker ou un crash de pod). C'est votre premier réflexe de réparation !
+
+## 2. Problème : La VM Vagrant ne démarre pas ou fige
 **Symptômes** : La commande `vagrant up` reste bloquée indéfiniment ou renvoie une erreur VirtualBox (ex: `VT-x is not enabled`).
 **Solutions** :
 * **Virtualisation matérielle** : Allez dans le BIOS/UEFI de votre ordinateur physique et assurez-vous que `VT-x` (Intel) ou `AMD-V` (AMD) est activé.

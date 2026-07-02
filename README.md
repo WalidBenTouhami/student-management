@@ -32,6 +32,9 @@ Pour lancer l'environnement complet (VM + Kubernetes + Jenkins + Supervision) en
 git clone https://github.com/votre-org/student-management.git
 cd student-management
 vagrant up
+
+# Déploiement magique complet (Build, Push, Helm, Tests)
+./devops-menu.sh --action all-in-one
 ```
 *(Le premier démarrage peut prendre entre 15 et 30 minutes).*
 

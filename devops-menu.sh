@@ -22,8 +22,8 @@ cleanup() {
         echo -e "\n${RED}❌ Une erreur est survenue (Code: $exit_code).${NC}"
     fi
     # Tuer les processus en background (comme ffmpeg) s'ils existent
-    if [ -n "${FFMPEG_PID:-}" ] && kill -0 $FFMPEG_PID 2>/dev/null; then
-        kill $FFMPEG_PID 2>/dev/null || true
+    if [ -n "${FFMPEG_PID:-}" ] && kill -0 "$FFMPEG_PID" 2>/dev/null; then
+        kill "$FFMPEG_PID" 2>/dev/null || true
     fi
     exit $exit_code
 }
@@ -49,7 +49,6 @@ else
     VM_IP="192.168.56.10"
     NAMESPACE="devops-tools"
     APP_DEPLOYMENT_NAME="spring-app"
-    DB_DEPLOYMENT_NAME="mysql-deployment"
     DB_LABEL="app=mysql"
     HELM_RELEASE_NAME="student-management"
     HELM_CHART_PATH="/vagrant/helm/student-management"
@@ -139,6 +138,22 @@ pause() {
     fi
 }
 
+run_with_audit() {
+    local action_name=$1
+    local debug_log="${AUDITS_DIR}/debug_${action_name}_$(date +%Y%m%d_%H%M%S).log"
+    print_info "📝 Mode Audit Activé : Enregistrement de l'exécution dans $debug_log"
+    
+    # Exécution de la commande en capturant toutes les sorties (stdout + stderr) vers le fichier et l'écran
+    $action_name 2>&1 | tee -a "$debug_log"
+    
+    # Récupération du vrai code de retour de la fonction (ignorer le succès de 'tee')
+    local exit_code=${PIPESTATUS[0]}
+    if [ "$exit_code" -ne 0 ]; then
+        print_warn "⚠️ Fin avec statut $exit_code. En cas de problème, utilisez le log pour le débogage : $debug_log"
+    fi
+    return "$exit_code"
+}
+
 check_prerequisites() {
     log "INFO" "Vérification des prérequis."
     local MISSING=0
@@ -207,24 +222,20 @@ cmd_health() {
     if [[ "$(hostname)" == "devops-vm" ]] && command -v minikube &>/dev/null; then
         TARGET_IP=$(minikube ip)
     fi
-    local URL="http://${TARGET_IP}:${API_PORT}/student/actuator/health"
-    
     local HTTP_CODE="000"
     for i in {1..6}; do
-        HTTP_CODE=$(curl -m 5 -s -o /dev/null -w "%{http_code}" "$URL" || true)
-        if [ "$HTTP_CODE" -eq 200 ]; then
-            break
-        fi
         print_info "Attente de l'API (Tentative $i/6)..."
-        sleep 5
+        # Exécution du curl directement dans la VM pour résoudre 'minikube ip'
+        HTTP_CODE=$(vm_exec "curl -m 5 -s -o /dev/null -w '%{http_code}' http://\$(minikube ip 2>/dev/null):$API_PORT/student/actuator/health || echo '000'" | tr -d '\r' | tail -n 1)
+        
+        if [ "$HTTP_CODE" == "200" ]; then
+            print_success "L'API est EN LIGNE (HTTP 200)."
+            return 0
+        fi
+        sleep 10
     done
-
-    if [ "$HTTP_CODE" -eq 200 ]; then
-        print_success "L'API est EN LIGNE (HTTP 200)."
-    else
-        print_error "L'API est HORS LIGNE (HTTP $HTTP_CODE) sur $URL."
-        [ -n "${NON_INTERACTIVE:-}" ] && exit 1
-    fi
+    print_error "L'API est HORS LIGNE (HTTP $HTTP_CODE)."
+    return 1
 }
 
 cmd_update_deployment() {
@@ -262,9 +273,24 @@ cmd_manage_secrets() {
 }
 
 cmd_network_info() {
-    print_info "Informations Réseau"
-    echo -e "IP VM: $VM_IP"
+    print_info "Informations Réseau & Liens (Mode Production)"
+    echo -e "${YELLOW}🔹 Le profil Spring Boot est défini sur 'prod' via Kubernetes (SPRING_PROFILES_ACTIVE=prod)${NC}"
+    echo -e ""
+    echo -e "${CYAN}[ IP ET PORTS ]${NC}"
+    echo -e "VM IP: $VM_IP"
     echo -e "API K8s Port: $API_PORT"
+    echo -e ""
+    echo -e "${CYAN}[ ENDPOINTS API ]${NC} (Authentification: api-user / \${APP_SECURITY_PASSWORD:-admin})"
+    echo -e "Swagger UI : $API_SWAGGER_URL"
+    echo -e "Health     : $API_HEALTH_URL"
+    echo -e "Students   : http://${VM_IP}:${API_PORT}/student/students"
+    echo -e "Departments: http://${VM_IP}:${API_PORT}/student/departments"
+    echo -e ""
+    echo -e "${CYAN}[ DASHBOARDS INFRA ]${NC}"
+    echo -e "Jenkins    : $JENKINS_URL"
+    echo -e "SonarQube  : $SONAR_URL"
+    echo -e "Grafana    : $GRAFANA_URL"
+    echo -e "Prometheus : $PROMETHEUS_URL"
 }
 
 cmd_show_logs() {
@@ -314,7 +340,7 @@ cmd_backup() {
 
 cmd_restore() {
     print_info "Restauration MySQL..."
-    local backups=(${BACKUP_DIR}/*.sql)
+    local backups=("${BACKUP_DIR}"/*.sql)
     if [ ${#backups[@]} -eq 0 ] || [ ! -e "${backups[0]}" ]; then
         print_error "Aucun backup."
         return 1
@@ -338,10 +364,16 @@ cmd_trivy_scan() {
 
 cmd_smoke_tests() {
     print_info "Smoke Tests..."
-    for url in "http://${VM_IP}:${API_PORT}/student/students" "http://${VM_IP}:${API_PORT}/student/departments"; do
-        local res=$(curl -o /dev/null -s -w "%{http_code}\n" "$url")
-        echo -e "Testing $url ... HTTP $res"
+    local res
+    for url_path in "/student/students" "/student/departments"; do
+        res=$(vm_exec "curl -u \"api-user:\${APP_SECURITY_PASSWORD:-admin}\" -o /dev/null -s -w '%{http_code}' \"http://\$(minikube ip 2>/dev/null):${API_PORT}${url_path}\" || echo '000'" | tr -d '\r' | tail -n 1)
+        echo -e "Testing $url_path ... HTTP $res"
+        if [ "$res" != "200" ]; then
+            print_error "Échec du smoke test (HTTP $res)"
+            return 1
+        fi
     done
+    print_success "Tous les smoke tests sont passés avec succès !"
 }
 
 cmd_advanced_cleanup() {
@@ -443,6 +475,18 @@ cmd_ci_deploy() {
     print_info "Attente du démarrage des pods (Timeout: 3m)..."
     vm_exec "kubectl rollout status deployment/$APP_DEPLOYMENT_NAME -n $NAMESPACE --timeout=3m" || print_warn "Timeout rollout, mais le déploiement continue."
     print_success "Déploiement réussi."
+}
+
+cmd_all_in_one() {
+    print_info "🔥 Lancement de la magie : All-in-One Pipeline..."
+    cmd_ci_build || return 1
+    cmd_ci_test || return 1
+    cmd_ci_package || return 1
+    cmd_docker_build || return 1
+    cmd_ci_deploy || return 1
+    cmd_health || return 1
+    cmd_smoke_tests || return 1
+    print_success "🎉 All-in-One terminé avec succès ! L'application est en production."
 }
 
 cmd_generate_ci_pipeline() {
@@ -551,19 +595,21 @@ done
 if [ -n "$NON_INTERACTIVE" ]; then
     check_prerequisites
     case $ACTION in
-        start) cmd_start_env ;;
-        stop) cmd_stop_env ;;
-        status) cmd_status ;;
-        health) cmd_health ;;
-        backup) cmd_backup ;;
-        audit) cmd_audit ;;
-        build) cmd_ci_build ;;
-        test) cmd_ci_test ;;
-        sonar) cmd_ci_sonar ;;
-        package) cmd_ci_package ;;
-        docker-build) cmd_docker_build ;;
-        docker-push) cmd_docker_push ;;
-        deploy) cmd_ci_deploy ;;
+        start) run_with_audit cmd_start_env ;;
+        stop) run_with_audit cmd_stop_env ;;
+        status) run_with_audit cmd_status ;;
+        health) run_with_audit cmd_health ;;
+        backup) run_with_audit cmd_backup ;;
+        audit) run_with_audit cmd_audit ;;
+        build) run_with_audit cmd_ci_build ;;
+        test) run_with_audit cmd_ci_test ;;
+        sonar) run_with_audit cmd_ci_sonar ;;
+        package) run_with_audit cmd_ci_package ;;
+        docker-build) run_with_audit cmd_docker_build ;;
+        docker-push) run_with_audit cmd_docker_push ;;
+        deploy) run_with_audit cmd_ci_deploy ;;
+        smoke_tests) run_with_audit cmd_smoke_tests ;;
+        all-in-one) run_with_audit cmd_all_in_one ;;
         *) print_error "Action inconnue"; exit 1 ;;
     esac
     exit 0
@@ -574,38 +620,43 @@ show_menu() {
     echo -e "${BLUE}======================================================${NC}"
     echo -e "${GREEN}🚀 Student Management - DevOps Menu (v3.1 QA Approved)${NC}"
     echo -e "${BLUE}======================================================${NC}"
-    echo -e "${CYAN}[ OPÉRATIONS DE BASE ]${NC}"
-    echo "1. Démarrer l'environnement"
-    echo "2. Arrêter l'environnement"
-    echo "3. État des services"
-    echo "4. Ouvrir les dashboards"
-    echo "5. Déclencher Build Jenkins"
-    echo "6. Health check API"
-    echo -e "${CYAN}[ DÉPLOIEMENT & INFRA ]${NC}"
-    echo "7. Mettre à jour le déploiement (Helm Upgrade)"
-    echo "8. Rollback Helm"
-    echo "9. Redémarrer le service Spring App"
-    echo "10. Gestion des Secrets K8s"
-    echo "11. Informations réseau"
-    echo -e "${CYAN}[ SUPERVISION & LOGS ]${NC}"
-    echo "12. Logs basiques (Spring Boot)"
-    echo "13. Détails des Pods et Ressources"
-    echo "14. Supervision en temps réel"
-    echo "15. Générer un rapport d'état système"
-    echo -e "${CYAN}[ MAINTENANCE & SÉCURITÉ ]${NC}"
-    echo "16. Backup de la BDD (MySQL)"
-    echo "17. Restaurer un Backup"
-    echo "18. Scan vulnérabilités (Trivy)"
-    echo "19. Smoke Tests"
-    echo "20. Nettoyage avancé"
-    echo "21. Mettre à jour fichier Hosts DNS"
-    echo "22. Ouvrir Tunnel SSH"
-    echo -e "${CYAN}[ DÉMO, AUDIT & CI/CD ]${NC}"
-    echo "23. Enregistrer vidéo démo (2 min)"
-    echo "24. Audit & Autoréparation"
-    echo "25. Docker Build"
-    echo "26. Docker Push"
-    echo "27. Générer un pipeline CI/CD"
+    echo -e "${CYAN}[ 1. INFRASTRUCTURE & DÉMARRAGE ]${NC}"
+    echo "1. Démarrer l'environnement (Vagrant up)"
+    echo "2. Arrêter l'environnement (Vagrant halt)"
+    echo "3. Ouvrir Tunnel SSH"
+    echo "4. Mettre à jour fichier Hosts DNS"
+    echo ""
+    echo -e "${CYAN}[ 2. CI/CD & DÉPLOIEMENT EN PRODUCTION ]${NC}"
+    echo "5. Packager et Créer l'image Docker (Build)"
+    echo "6. Pousser l'image Docker (Push)"
+    echo "7. Déployer en Production (Helm Upgrade)"
+    echo "8. Rollback vers la version précédente"
+    echo "9. Générer un pipeline CI/CD (Jenkins/GitHub)"
+    echo "10. Déclencher le Build Jenkins"
+    echo "11. 🔥 Lancement Magique (All-in-One Pipeline)"
+    echo ""
+    echo -e "${CYAN}[ 3. TESTS & SUPERVISION ]${NC}"
+    echo "12. Health check de l'API"
+    echo "13. Smoke Tests"
+    echo "14. Informations Réseau & Liens utiles"
+    echo "15. Ouvrir les dashboards (Grafana, Sonar...)"
+    echo "16. État des services (Pods, Vagrant)"
+    echo "17. Supervision en temps réel (Logs & Pods)"
+    echo ""
+    echo -e "${CYAN}[ 4. ADMINISTRATION & DÉPANNAGE ]${NC}"
+    echo "18. Logs basiques (Spring Boot)"
+    echo "19. Détails avancés des Pods et Ressources"
+    echo "20. Redémarrer le service Spring App"
+    echo "21. Audit système & Autoréparation"
+    echo "22. Générer un rapport d'état système"
+    echo "23. Gestion des Secrets K8s"
+    echo ""
+    echo -e "${CYAN}[ 5. MAINTENANCE & SÉCURITÉ ]${NC}"
+    echo "24. Scan vulnérabilités (Trivy)"
+    echo "25. Backup de la Base de Données (MySQL)"
+    echo "26. Restaurer un Backup"
+    echo "27. Nettoyage avancé (Prune Docker & Pods)"
+    echo "28. Enregistrer vidéo démo (2 min)"
     echo -e "${RED}q. Quitter${NC}"
     echo -e "${BLUE}======================================================${NC}"
 }
@@ -616,33 +667,34 @@ while true; do
     read -p "Votre choix : " choice
     echo ""
     case $choice in
-        1) cmd_start_env ;;
-        2) cmd_stop_env ;;
-        3) cmd_status ;;
-        4) cmd_dashboards ;;
-        5) cmd_trigger_build ;;
-        6) cmd_health ;;
-        7) cmd_update_deployment ;;
-        8) cmd_helm_rollback ;;
-        9) cmd_restart_service ;;
-        10) cmd_manage_secrets ;;
-        11) cmd_network_info ;;
-        12) cmd_show_logs ;;
-        13) cmd_pod_details ;;
-        14) cmd_realtime_monitoring ;;
-        15) cmd_generate_report ;;
-        16) cmd_backup ;;
-        17) cmd_restore ;;
-        18) cmd_trivy_scan ;;
-        19) cmd_smoke_tests ;;
-        20) cmd_advanced_cleanup ;;
-        21) cmd_update_hosts ;;
-        22) cmd_ssh_tunnel ;;
-        23) cmd_demo_video ;;
-        24) cmd_audit ;;
-        25) cmd_docker_build ;;
-        26) cmd_docker_push ;;
-        27) cmd_generate_ci_pipeline ;;
+        1) run_with_audit cmd_start_env ;;
+        2) run_with_audit cmd_stop_env ;;
+        3) cmd_ssh_tunnel ;; # TTY needed, no wrap
+        4) run_with_audit cmd_update_hosts ;;
+        5) run_with_audit cmd_docker_build ;;
+        6) run_with_audit cmd_docker_push ;;
+        7) run_with_audit cmd_update_deployment ;;
+        8) run_with_audit cmd_helm_rollback ;;
+        9) run_with_audit cmd_generate_ci_pipeline ;;
+        10) cmd_trigger_build ;; # Opens browser, no wrap
+        11) run_with_audit cmd_all_in_one ;;
+        12) run_with_audit cmd_health ;;
+        13) run_with_audit cmd_smoke_tests ;;
+        14) run_with_audit cmd_network_info ;;
+        15) cmd_dashboards ;; # Opens browser, no wrap
+        16) run_with_audit cmd_status ;;
+        17) cmd_realtime_monitoring ;; # Opens terminals, no wrap
+        18) run_with_audit cmd_show_logs ;;
+        19) run_with_audit cmd_pod_details ;;
+        20) run_with_audit cmd_restart_service ;;
+        21) run_with_audit cmd_audit ;;
+        22) run_with_audit cmd_generate_report ;;
+        23) run_with_audit cmd_manage_secrets ;;
+        24) run_with_audit cmd_trivy_scan ;;
+        25) run_with_audit cmd_backup ;;
+        26) run_with_audit cmd_restore ;;
+        27) run_with_audit cmd_advanced_cleanup ;;
+        28) run_with_audit cmd_demo_video ;;
         q|Q) print_success "Au revoir !"; exit 0 ;;
         *) print_error "Option invalide." ;;
     esac

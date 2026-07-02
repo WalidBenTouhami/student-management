@@ -4,8 +4,9 @@ Le script `devops-menu.sh` a été conçu pour simplifier et automatiser la gest
 
 ## 🌟 Fonctionnalités (v3.0 - Production Ready)
 
-- **Gestion Interactive & Batch** : Utilisable via un menu interactif coloré ou intégré dans un pipeline CI/CD via des arguments en ligne de commande.
-- **Robustesse & Logs** : Mode `set -eo pipefail`, capture des signaux via `trap`, et centralisation de tous les événements dans `./logs/devops-menu.log`.
+- **Gestion Interactive & Batch** : Utilisable via un menu interactif structuré en 5 catégories logiques (Infra, CI/CD, Tests, Admin, Sécurité).
+- **Lancement Magique (All-in-One)** : Option exclusive pour packager, builder, déployer et tester l'application d'une seule touche.
+- **Robustesse & Logs d'Audit** : Chaque option du menu est sécurisée par le wrapper `run_with_audit` qui sauvegarde l'intégralité de la sortie dans `./audits/debug_*.log` pour un dépannage facilité.
 - **Modularité** : Toute la configuration (IPs, Ports, Namespaces) a été extraite dans `config.conf`.
 - **Exécution Parallèle** : L'état des services Kubernetes et Vagrant est récupéré en parallèle pour une exécution ultra-rapide.
 - **Audit & Autoréparation** : Capacité intégrée à détecter les pods en erreur et à redémarrer les services si l'API est indisponible.
@@ -26,7 +27,7 @@ Le script `devops-menu.sh` a été conçu pour simplifier et automatiser la gest
 
 ## 💻 Utilisation Interactive (Menu)
 
-Lancez simplement le script sans argument pour afficher le menu complet :
+Lancez simplement le script sans argument pour afficher le menu complet structuré (avec l'option magique **11. All-in-One Pipeline**) :
 ```bash
 ./devops-menu.sh
 ```
